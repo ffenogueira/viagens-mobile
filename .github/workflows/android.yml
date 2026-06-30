@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_SFTP_SECRETS: ${{ secrets.FRONTEND_SFTP_HOST != '' && secrets.FRONTEND_SFTP_USER != '' && secrets.FRONTEND_SFTP_KEY_B64 != '' && secrets.FRONTEND_SFTP_REMOTE_PATH != '' }}
 
     steps:
       - name: Checkout
@@ -39,8 +41,43 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease
 
+      - name: Prepare public APK filename
+        run: cp android/app/build/outputs/apk/release/app-release.apk viagens-mobile.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: viagens-native-preview-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: viagens-mobile.apk
+
+      - name: Publish APK to public hosting
+        if: env.HAS_SFTP_SECRETS == 'true'
+        env:
+          SFTP_HOST: ${{ secrets.FRONTEND_SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.FRONTEND_SFTP_PORT }}
+          SFTP_USER: ${{ secrets.FRONTEND_SFTP_USER }}
+          SFTP_KEY_B64: ${{ secrets.FRONTEND_SFTP_KEY_B64 }}
+          SFTP_REMOTE_PATH: ${{ secrets.FRONTEND_SFTP_REMOTE_PATH }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "$SFTP_KEY_B64" | base64 -d > ~/.ssh/mobile_deploy_key
+          chmod 600 ~/.ssh/mobile_deploy_key
+          {
+            echo "cd ${SFTP_REMOTE_PATH}"
+            echo "put viagens-mobile.apk"
+            echo "bye"
+          } > /tmp/mobile-sftp-batch.txt
+          sftp \
+            -b /tmp/mobile-sftp-batch.txt \
+            -i ~/.ssh/mobile_deploy_key \
+            -P "${SFTP_PORT:-22}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "${SFTP_USER}@${SFTP_HOST}"
+
+      - name: Skip public upload without SFTP secrets
+        if: env.HAS_SFTP_SECRETS != 'true'
+        run: echo "Public APK upload skipped. Configure FRONTEND_SFTP_* secrets on this repository."
