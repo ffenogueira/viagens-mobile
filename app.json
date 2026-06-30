@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Viagens by Up Your Idea",
+    "slug": "viagens-by-up-your-idea",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "viagens",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.upyouridea.viagens"
+    },
+    "android": {
+      "package": "br.com.upyouridea.viagens",
+      "adaptiveIcon": {
+        "backgroundColor": "#7B4DFF"
+      },
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "extra": {
+      "apiUrl": "https://api-viagens.upyouridea.com.br/v1"
+    }
+  }
+}

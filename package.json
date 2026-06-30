@@ -1,0 +1,28 @@
+{
+  "name": "viagens-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "prebuild:android": "expo prebuild --platform android",
+    "build:apk": "eas build --platform android --profile preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "expo": "^56.0.12",
+    "expo-camera": "^56.0.8",
+    "expo-image-picker": "^56.0.18",
+    "expo-location": "^56.0.18",
+    "expo-secure-store": "^56.0.4",
+    "expo-system-ui": "~56.0.5",
+    "react": "^19.2.7",
+    "react-native": "^0.86.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "typescript": "^5.9.2"
+  }
+}
