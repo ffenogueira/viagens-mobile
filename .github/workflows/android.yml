@@ -42,13 +42,13 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Prepare public APK filename
-        run: cp android/app/build/outputs/apk/release/app-release.apk viagens-mobile.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk viagens-by-up-your-idea-public-preview.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: viagens-native-preview-release-apk
-          path: viagens-mobile.apk
+          path: viagens-by-up-your-idea-public-preview.apk
 
       - name: Publish APK to public hosting
         if: env.HAS_SFTP_SECRETS == 'true'
@@ -65,7 +65,7 @@ jobs:
           chmod 600 ~/.ssh/mobile_deploy_key
           {
             echo "cd ${SFTP_REMOTE_PATH}"
-            echo "put viagens-mobile.apk"
+            echo "put viagens-by-up-your-idea-public-preview.apk"
             echo "bye"
           } > /tmp/mobile-sftp-batch.txt
           sftp \
