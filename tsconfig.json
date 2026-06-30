@@ -3,10 +3,16 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "skipLibCheck": true
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
+    "index.ts",
+    "nativewind-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "components/ui/**"
   ]
 }
