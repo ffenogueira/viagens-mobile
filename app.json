@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Viagens by Up Your Idea",
+    "name": "Viagens Preview",
     "slug": "viagens-by-up-your-idea",
     "version": "0.1.0",
     "orientation": "portrait",
-    "scheme": "viagens",
+    "scheme": "viagens-preview",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"
@@ -14,7 +14,7 @@
       "bundleIdentifier": "br.com.upyouridea.viagens"
     },
     "android": {
-      "package": "br.com.upyouridea.viagens",
+      "package": "br.com.upyouridea.viagens.preview",
       "adaptiveIcon": {
         "backgroundColor": "#7B4DFF"
       },
