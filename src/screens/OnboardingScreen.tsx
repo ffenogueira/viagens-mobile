@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
 import { BrandMark } from '../components/BrandMark'
-import { colors, shadowStrong } from '../theme'
+import { colors, shadow } from '../theme'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const absoluteFill = StyleSheet.absoluteFill
@@ -152,33 +152,38 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       </VStack>
 
       <HStack
-        className="absolute left-7 right-7 items-center justify-between"
-        style={{ bottom: insets.bottom + 26 }}
+        className="absolute left-7 right-7 items-center justify-between rounded-full border border-white/16 bg-white/12 p-1.5"
+        style={{ bottom: insets.bottom + 24 }}
       >
         <Pressable
           disabled={index === 0}
           onPress={goPrev}
-          className="h-[56px] w-[56px] items-center justify-center rounded-full border border-white/25 bg-white/18 data-[disabled=true]:opacity-35"
+          className="h-[46px] w-[46px] items-center justify-center rounded-full bg-white/10 data-[disabled=true]:opacity-30"
         >
-          <Ionicons color={colors.white} name="arrow-back" size={20} />
+          <Ionicons color={colors.white} name="arrow-back" size={18} />
         </Pressable>
 
         <Pressable
           onPress={goNext}
-          className="h-[58px] flex-1 items-center justify-center rounded-full bg-primary px-5 active:opacity-90"
-          style={[shadowStrong, { marginHorizontal: 14 }]}
+          className={`h-[46px] flex-1 items-center justify-center rounded-full px-5 active:opacity-90 ${
+            index === slides.length - 1 ? 'bg-primary' : 'bg-white'
+          }`}
+          style={[{ marginHorizontal: 8 }, index === slides.length - 1 ? shadow : null]}
         >
-          <Text className="text-[15px] font-black text-white">
-            {index === slides.length - 1 ? 'Começar agora' : 'Ver próximo'}
+          <Text
+            className={`text-[14px] font-black ${
+              index === slides.length - 1 ? 'text-white' : 'text-primary'
+            }`}
+          >
+            {index === slides.length - 1 ? 'Entrar no app' : 'Próximo'}
           </Text>
         </Pressable>
 
         <Pressable
           onPress={goNext}
-          className="h-[56px] w-[56px] items-center justify-center rounded-full bg-white"
-          style={shadowStrong}
+          className="h-[46px] w-[46px] items-center justify-center rounded-full bg-white/90"
         >
-          <Ionicons color={colors.primary} name="arrow-forward" size={20} />
+          <Ionicons color={colors.primary} name="arrow-forward" size={18} />
         </Pressable>
       </HStack>
     </Box>
