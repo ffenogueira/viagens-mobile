@@ -6,6 +6,12 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
+    "android:setup": "bash scripts/android-setup.sh",
+    "android:patch-node": "bash scripts/patch-android-node.sh",
+    "android:patch-expo": "bash scripts/patch-expo-path-spaces.sh",
+    "android:studio": "open -a \"Android Studio\" android",
+    "android:emulator": "bash scripts/android-emulator.sh",
+    "android:devices": "adb devices",
     "prebuild:android": "expo prebuild --platform android",
     "build:apk": "eas build --platform android --profile preview",
     "typecheck": "tsc --noEmit"
@@ -23,8 +29,8 @@
     "expo-secure-store": "^56.0.4",
     "expo-system-ui": "~56.0.5",
     "nativewind": "^4.2.6",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.85.3",
     "react-native-css-interop": "^0.2.6",
     "react-native-reanimated": "4.3.1",

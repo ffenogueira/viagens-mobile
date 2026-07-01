@@ -215,6 +215,30 @@ export async function login(email: string, password: string): Promise<AuthSessio
   return { token, user }
 }
 
+export async function loginWithSocial(
+  provider: 'google' | 'apple' | 'facebook',
+  idToken: string
+): Promise<AuthSession> {
+  const payload = await apiRequest<{ user?: AuthUser; token?: string; data?: { user: AuthUser; token: string } }>(
+    `/auth/${provider}`,
+    {
+      method: 'POST',
+      auth: false,
+      body: JSON.stringify({ idToken })
+    }
+  )
+
+  const token = payload.token ?? payload.data?.token
+  const user = payload.user ?? payload.data?.user
+
+  if (!token || !user) {
+    throw new Error('Resposta de login social inválida.')
+  }
+
+  await saveToken(token)
+  return { token, user }
+}
+
 export async function register(name: string, email: string, password: string): Promise<AuthSession> {
   const payload = await apiRequest<{ user?: AuthUser; token?: string; data?: { user: AuthUser; token: string } }>(
     '/auth/register',

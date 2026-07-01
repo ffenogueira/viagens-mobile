@@ -1,29 +1,82 @@
 import { Ionicons } from '@expo/vector-icons'
-import React from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import React, { useRef, useState } from 'react'
 import {
-  Badge,
-  BadgeText,
-  Box,
-  Button,
-  ButtonSpinner,
-  ButtonText,
-  Card,
-  Heading,
-  HStack,
-  Input,
-  InputField,
-  Pressable,
-  Text,
-  VStack
-} from '../../components/ui'
+  ActivityIndicator,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable as RNPressable,
+  ScrollView,
+  StyleSheet,
+  TextInput
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
+import { BrandMark } from '../components/BrandMark'
+import { SocialLoginButtons } from '../components/SocialLoginButtons'
+import { colors, shadowStrong } from '../theme'
 import type { AuthScreenProps } from './types'
 
-const highlights = [
-  { icon: 'sparkles' as const, title: 'FEFAI contextual', text: 'Roteiro, gastos e decisões com contexto real da viagem.' },
-  { icon: 'scan' as const, title: 'Câmera inteligente', text: 'OCR de preço, recibo e conversão de moeda na hora.' },
-  { icon: 'images' as const, title: 'Memórias vivas', text: 'Álbum original, passaporte digital e retrospectiva.' }
-]
+const HORIZONTAL = 22
+const absoluteFill = StyleSheet.absoluteFill
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=85'
+
+function AuthField({
+  icon,
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
+  onFocus,
+  trailing
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+  placeholder: string
+  value: string
+  onChangeText: (value: string) => void
+  secureTextEntry?: boolean
+  keyboardType?: 'default' | 'email-address'
+  autoCapitalize?: 'none' | 'words'
+  onFocus?: () => void
+  trailing?: React.ReactNode
+}) {
+  return (
+    <VStack className="gap-2">
+      <Text className="text-[13px] font-bold text-[#475569]">{label}</Text>
+      <HStack className="h-[54px] items-center rounded-[20px] border border-[#E5E7EB] bg-[#F8FAFC] px-4">
+        <Ionicons color={colors.primary} name={icon} size={19} />
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={onFocus}
+          placeholder={placeholder}
+          placeholderTextColor="#94A3B8"
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          className="ml-3 flex-1 text-[15px] font-semibold text-[#111827]"
+        />
+        {trailing}
+      </HStack>
+    </VStack>
+  )
+}
+
+function OrDivider() {
+  return (
+    <HStack className="my-5 items-center gap-3">
+      <Box className="h-px flex-1 bg-[#E5E7EB]" />
+      <Text className="text-[12px] font-bold text-[#94A3B8]">ou continue com</Text>
+      <Box className="h-px flex-1 bg-[#E5E7EB]" />
+    </HStack>
+  )
+}
 
 export function AuthScreen({
   mode,
@@ -31,126 +84,223 @@ export function AuthScreen({
   email,
   password,
   loading,
+  socialLoading = false,
+  socialProvider = null,
   onModeChange,
   onNameChange,
   onEmailChange,
   onPasswordChange,
-  onSubmit
+  onSubmit,
+  onSocialLogin
 }: AuthScreenProps) {
+  const insets = useSafeAreaInsets()
+  const scrollRef = useRef<ScrollView>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
+
+  const isLogin = mode === 'login'
+  const busy = loading || socialLoading
+
+  function scrollToForm() {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true })
+    })
+  }
+
   return (
-    <Box className="flex-1 bg-background">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+    <Box className="flex-1 bg-[#FAF7FF]">
+      <ImageBackground source={{ uri: HERO_IMAGE }} resizeMode="cover" style={{ height: 280 }}>
+        <LinearGradient
+          colors={['rgba(250,247,255,0.15)', 'rgba(15,23,42,0.12)', 'rgba(15,23,42,0.58)']}
+          locations={[0, 0.42, 1]}
+          style={absoluteFill}
+        />
+
+        <VStack
+          className="flex-1 justify-between px-6"
+          style={{ paddingTop: insets.top + 14, paddingBottom: 34 }}
+        >
+          <HStack className="items-center justify-between">
+            <BrandMark variant="light" size="sm" />
+            <Box className="rounded-full bg-white/18 px-3 py-2">
+              <Text className="text-[12px] font-bold text-white">Antes, durante e depois</Text>
+            </Box>
+          </HStack>
+
+          <VStack>
+            <Text className="text-[34px] font-black leading-[39px] text-white">
+              Sua viagem começa aqui.
+            </Text>
+            <Text className="mt-3 text-[15px] font-semibold leading-[22px] text-white/86">
+              Entre para planejar em grupo, dividir gastos, usar IA e guardar fotos em qualidade
+              original.
+            </Text>
+          </VStack>
+        </VStack>
+      </ImageBackground>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="-mt-8 flex-1"
+      >
         <ScrollView
-          contentContainerClassName="px-5 pt-8 pb-10"
+          ref={scrollRef}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={{
+            paddingHorizontal: HORIZONTAL,
+            paddingBottom: insets.bottom + 24
+          }}
         >
-          <Badge className="self-start rounded-full border border-secondary bg-card px-4 py-2">
-            <HStack className="items-center gap-2">
-              <Ionicons color="#7B4DFF" name="sparkles" size={16} />
-              <BadgeText className="font-extrabold text-primary">Viagens by Up Your Idea</BadgeText>
-            </HStack>
-          </Badge>
-
-          <Heading size="3xl" className="mt-6 font-black leading-tight text-foreground">
-            Antes, durante{'\n'}e depois da viagem.
-          </Heading>
-
-          <Text className="mt-4 text-base font-semibold leading-7 text-muted-foreground">
-            Planeje com IA, use a câmera para preço e recibo, divida gastos e preserve as memórias do grupo.
-          </Text>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-8" contentContainerClassName="gap-3">
-            {highlights.map((item) => (
-              <Card key={item.title} className="w-52 rounded-3xl border border-border bg-card p-4 shadow-soft-2">
-                <Box className="mb-3 h-11 w-11 items-center justify-center rounded-2xl bg-secondary">
-                  <Ionicons color="#7B4DFF" name={item.icon} size={22} />
-                </Box>
-                <Text className="font-extrabold text-foreground">{item.title}</Text>
-                <Text className="mt-2 text-sm font-semibold leading-5 text-muted-foreground">{item.text}</Text>
-              </Card>
-            ))}
-          </ScrollView>
-
-          <Card className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-soft-3">
-            <HStack className="mb-5 rounded-2xl bg-muted p-1">
+          <VStack
+            className="rounded-t-[36px] bg-white px-5 pb-6 pt-5"
+            style={shadowStrong}
+          >
+            <HStack className="mb-6 rounded-full bg-[#F1F5F9] p-1.5">
               <Pressable
-                className={`flex-1 items-center rounded-xl py-3 ${mode === 'login' ? 'bg-card shadow-soft-1' : ''}`}
+                disabled={busy}
                 onPress={() => onModeChange('login')}
+                className={`h-[44px] flex-1 items-center justify-center rounded-full ${
+                  isLogin ? 'bg-white' : 'bg-transparent'
+                }`}
               >
-                <Text className={`font-extrabold ${mode === 'login' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <Text
+                  className={`text-[14px] font-black ${
+                    isLogin ? 'text-foreground' : 'text-muted-foreground'
+                  }`}
+                >
                   Entrar
                 </Text>
               </Pressable>
               <Pressable
-                className={`flex-1 items-center rounded-xl py-3 ${mode === 'register' ? 'bg-card shadow-soft-1' : ''}`}
+                disabled={busy}
                 onPress={() => onModeChange('register')}
+                className={`h-[44px] flex-1 items-center justify-center rounded-full ${
+                  !isLogin ? 'bg-white' : 'bg-transparent'
+                }`}
               >
-                <Text className={`font-extrabold ${mode === 'register' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <Text
+                  className={`text-[14px] font-black ${
+                    !isLogin ? 'text-foreground' : 'text-muted-foreground'
+                  }`}
+                >
                   Criar conta
                 </Text>
               </Pressable>
             </HStack>
 
-            <VStack className="gap-4">
-              {mode === 'register' && (
-                <VStack className="gap-2">
-                  <Text className="font-extrabold text-foreground">Nome</Text>
-                  <Input className="h-12 rounded-2xl border-border bg-card">
-                    <InputField
-                      value={name}
-                      onChangeText={onNameChange}
-                      autoCapitalize="words"
-                      placeholder="Seu nome"
-                      className="text-base"
-                    />
-                  </Input>
-                </VStack>
+            <Text className="text-[24px] font-black leading-[30px] text-[#111827]">
+              {isLogin ? 'Bem-vinda de volta' : 'Crie seu workspace de viagem'}
+            </Text>
+            <Text className="mt-2 text-[14px] font-semibold leading-[21px] text-[#64748B]">
+              {isLogin
+                ? 'Acesse seus roteiros, grupos, fotos e ferramentas inteligentes.'
+                : 'Leva menos de um minuto para começar a organizar sua próxima viagem.'}
+            </Text>
+
+            <VStack className="mt-6 gap-4">
+              {!isLogin && (
+                <AuthField
+                  icon="person-outline"
+                  label="Nome"
+                  placeholder="Seu nome"
+                  value={name}
+                  onChangeText={onNameChange}
+                  autoCapitalize="words"
+                  onFocus={scrollToForm}
+                />
               )}
 
-              <VStack className="gap-2">
-                <Text className="font-extrabold text-foreground">E-mail</Text>
-                <Input className="h-12 rounded-2xl border-border bg-card">
-                  <InputField
-                    value={email}
-                    onChangeText={onEmailChange}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholder="voce@email.com"
-                    className="text-base"
-                  />
-                </Input>
-              </VStack>
+              <AuthField
+                icon="mail-outline"
+                label="E-mail"
+                placeholder="voce@email.com"
+                value={email}
+                onChangeText={onEmailChange}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onFocus={scrollToForm}
+              />
 
-              <VStack className="gap-2">
-                <Text className="font-extrabold text-foreground">Senha</Text>
-                <Input className="h-12 rounded-2xl border-border bg-card">
-                  <InputField
-                    value={password}
-                    onChangeText={onPasswordChange}
-                    secureTextEntry
-                    placeholder="••••••••"
-                    className="text-base"
-                  />
-                </Input>
-              </VStack>
+              <AuthField
+                icon="lock-closed-outline"
+                label="Senha"
+                placeholder="Digite sua senha"
+                value={password}
+                onChangeText={onPasswordChange}
+                secureTextEntry={!showPassword}
+                onFocus={scrollToForm}
+                trailing={
+                  <Pressable
+                    className="h-10 w-10 items-center justify-center"
+                    onPress={() => setShowPassword((current) => !current)}
+                  >
+                    <Ionicons
+                      color="#94A3B8"
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                    />
+                  </Pressable>
+                }
+              />
+            </VStack>
 
-              <Button
-                size="lg"
-                className="mt-2 h-14 rounded-2xl bg-primary data-[active=true]:bg-primary/90"
-                onPress={onSubmit}
-                disabled={loading}
+            {isLogin && (
+              <HStack className="mt-5 items-center justify-between">
+                <RNPressable
+                  onPress={() => setRememberMe((current) => !current)}
+                  className="flex-row items-center gap-2.5"
+                >
+                  <Box
+                    className={`h-[20px] w-[20px] items-center justify-center rounded-md border-2 ${
+                      rememberMe ? 'border-primary bg-primary' : 'border-[#D1D5DB] bg-white'
+                    }`}
+                  >
+                    {rememberMe && <Ionicons color="#FFFFFF" name="checkmark" size={12} />}
+                  </Box>
+                  <Text className="text-[13px] font-semibold text-[#64748B]">Lembrar</Text>
+                </RNPressable>
+
+                <Pressable>
+                  <Text className="text-[13px] font-bold text-primary">Esqueci a senha</Text>
+                </Pressable>
+              </HStack>
+            )}
+
+            <Pressable
+              disabled={busy}
+              onPress={onSubmit}
+              className="mt-6 h-[56px] overflow-hidden rounded-full active:opacity-90 data-[disabled=true]:opacity-70"
+              style={shadowStrong}
+            >
+              <LinearGradient
+                colors={[colors.primary, '#6366F1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
               >
                 {loading ? (
-                  <ButtonSpinner color="white" />
+                  <ActivityIndicator color={colors.white} size="small" />
                 ) : (
-                  <ButtonText className="text-base font-black text-primary-foreground">
-                    {mode === 'login' ? 'Entrar no app' : 'Criar workspace'}
-                  </ButtonText>
+                  <HStack className="items-center gap-2">
+                    <Text className="text-[16px] font-black text-white">
+                      {isLogin ? 'Entrar no app' : 'Criar minha conta'}
+                    </Text>
+                    <Ionicons color={colors.white} name="arrow-forward" size={18} />
+                  </HStack>
                 )}
-              </Button>
-            </VStack>
-          </Card>
+              </LinearGradient>
+            </Pressable>
+
+            <OrDivider />
+
+            <SocialLoginButtons
+              loading={socialLoading}
+              loadingProvider={socialProvider}
+              onPress={onSocialLogin}
+            />
+          </VStack>
         </ScrollView>
       </KeyboardAvoidingView>
     </Box>

@@ -87,7 +87,6 @@ export function ProfileScreen({ user, tripCount, onLogout }: ProfileScreenProps)
         className="mt-4 h-14 rounded-2xl border-red-200 bg-red-50"
         onPress={onLogout}
       >
-        <Ionicons color={colors.danger} name="log-out-outline" size={20} />
         <ButtonText className="font-black text-destructive">Sair da conta</ButtonText>
       </Button>
 

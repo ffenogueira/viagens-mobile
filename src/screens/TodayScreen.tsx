@@ -100,10 +100,9 @@ export function TodayScreen({ selectedTrip, trips, loading, onCreateTrip, onNavi
             {loading ? (
               <ButtonSpinner color="#7B4DFF" />
             ) : (
-              <>
-                <Ionicons color="#7B4DFF" name="add-circle-outline" size={18} />
-                <ButtonText className="text-base font-black text-primary">Criar viagem exemplo</ButtonText>
-              </>
+              <ButtonText className="text-base font-black text-primary">
+                + Criar viagem exemplo
+              </ButtonText>
             )}
           </Button>
         )}

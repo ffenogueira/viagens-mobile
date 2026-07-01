@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Viagens Preview",
+    "name": "Viagens",
     "slug": "viagens-by-up-your-idea",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -15,6 +15,7 @@
     },
     "android": {
       "package": "br.com.upyouridea.viagens.preview",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#7B4DFF"
       },
