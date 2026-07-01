@@ -25,42 +25,57 @@ type Slide = {
   subtitle: string
   image: string
   icon: keyof typeof Ionicons.glyphMap
-  chips: string[]
+  benefits: Array<{
+    icon: keyof typeof Ionicons.glyphMap
+    text: string
+  }>
 }
 
 const slides: Slide[] = [
   {
     id: 'intent',
     label: '01 / Antes',
-    title: 'Do print ao plano.',
+    title: 'Planeje sem travar.',
     subtitle:
-      'Viu um lugar e salvou? A FEFAI transforma a ideia em roteiro, orçamento e checklist sem você abrir cinco apps.',
+      'Salvou um destino, viu um vídeo ou recebeu uma dica? O app transforma essa vontade em um plano simples de seguir.',
     image:
-      'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1400&q=88',
+      'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1400&q=88',
     icon: 'sparkles-outline',
-    chips: ['Roteiro com IA', 'Orçamento', 'Documentos']
+    benefits: [
+      { icon: 'map-outline', text: 'Roteiro por dia, com ajuda da FEFAI' },
+      { icon: 'wallet-outline', text: 'Orçamento estimado antes de comprar' },
+      { icon: 'document-text-outline', text: 'Checklist de documentos e reservas' }
+    ]
   },
   {
     id: 'live',
     label: '02 / Durante',
-    title: 'Grupo alinhado na rua.',
+    title: 'Viaje com o grupo no controle.',
     subtitle:
-      'Roteiro, chat, localização, check-in, conversor e recibo por OCR ficam juntos. Menos caos, mais viagem.',
+      'Na hora da viagem, todo mundo vê o plano, divide contas, combina pontos de encontro e evita perder informação no chat.',
     image:
-      'https://images.unsplash.com/photo-1506869640319-fe1a24fd76dc?auto=format&fit=crop&w=1400&q=88',
+      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=88',
     icon: 'people-outline',
-    chips: ['Grupo', 'Localização', 'Gastos']
+    benefits: [
+      { icon: 'location-outline', text: 'Check-in e localização com consentimento' },
+      { icon: 'scan-outline', text: 'Câmera lê preço, recibo e converte moeda' },
+      { icon: 'receipt-outline', text: 'Gastos entram no grupo e dividem automático' }
+    ]
   },
   {
     id: 'memory',
     label: '03 / Memória',
-    title: 'Memória sem perder qualidade.',
+    title: 'Depois, a viagem continua viva.',
     subtitle:
-      'Fotos originais, busca por rosto, mapa vivido, broches e retrospectiva para guardar a viagem do jeito certo.',
+      'As fotos, lugares, gastos e histórias viram um álbum organizado para guardar, rever e compartilhar sem perder qualidade.',
     image:
-      'https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1400&q=88',
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=88',
     icon: 'images-outline',
-    chips: ['Fotos originais', 'Mapa vivido', 'Broches']
+    benefits: [
+      { icon: 'images-outline', text: 'Álbum do grupo em qualidade original' },
+      { icon: 'person-circle-outline', text: 'Buscar fotos onde você aparece' },
+      { icon: 'ribbon-outline', text: 'Mapa vivido, retrospectiva e broches' }
+    ]
   }
 ]
 
@@ -208,29 +223,34 @@ function SlideFrame({
         </ImageBackground>
       </Animated.View>
 
-      <VStack className="absolute bottom-[132px] left-7 right-7 items-center">
-        <HStack className="mb-4 items-center gap-2 rounded-full bg-white/18 px-4 py-2">
+      <VStack className="absolute bottom-[124px] left-7 right-7 items-center">
+        <HStack className="mb-3 items-center gap-2 rounded-full bg-white/18 px-4 py-2">
           <Ionicons color={colors.white} name={item.icon} size={16} />
           <Text className="text-[12px] font-black uppercase text-white/90">{item.label}</Text>
         </HStack>
 
-        <Text className="text-center text-[38px] font-black leading-[43px] text-white">
+        <Text className="text-center text-[32px] font-black leading-[37px] text-white">
           {item.title}
         </Text>
         <Text
-          className="mt-4 max-w-[310px] text-center text-[15px] font-bold leading-6"
+          className="mt-3 max-w-[322px] text-center text-[14px] font-bold leading-[22px]"
           style={{ color: 'rgba(255,255,255,0.82)' }}
         >
           {item.subtitle}
         </Text>
 
-        <HStack className="mt-5 flex-wrap justify-center gap-2">
-          {item.chips.map((chip) => (
-            <Box key={chip} className="rounded-full bg-white/18 px-3 py-1.5">
-              <Text className="text-[12px] font-black text-white">{chip}</Text>
-            </Box>
+        <VStack className="mt-5 w-full gap-2 rounded-[24px] bg-white/14 p-3">
+          {item.benefits.map((benefit) => (
+            <HStack key={benefit.text} className="items-center gap-3 rounded-2xl bg-white/13 px-3 py-2">
+              <Box className="h-8 w-8 items-center justify-center rounded-full bg-white/18">
+                <Ionicons color={colors.white} name={benefit.icon} size={16} />
+              </Box>
+              <Text className="flex-1 text-[12px] font-black leading-4 text-white">
+                {benefit.text}
+              </Text>
+            </HStack>
           ))}
-        </HStack>
+        </VStack>
       </VStack>
     </View>
   )
