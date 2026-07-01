@@ -3,25 +3,21 @@ import { LinearGradient } from 'expo-linear-gradient'
 import React, { useRef, useState } from 'react'
 import {
   ActivityIndicator,
-  ImageBackground,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable as RNPressable,
   ScrollView,
-  StyleSheet,
   TextInput
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
 import { BrandMark } from '../components/BrandMark'
 import { SocialLoginButtons } from '../components/SocialLoginButtons'
-import { colors, shadowStrong } from '../theme'
+import { colors, shadow } from '../theme'
 import type { AuthScreenProps } from './types'
 
-const HORIZONTAL = 22
-const absoluteFill = StyleSheet.absoluteFill
-const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=85'
+const HORIZONTAL = 24
 
 function AuthField({
   icon,
@@ -47,20 +43,29 @@ function AuthField({
   trailing?: React.ReactNode
 }) {
   return (
-    <VStack className="gap-2">
-      <Text className="text-[13px] font-bold text-[#475569]">{label}</Text>
-      <HStack className="h-[54px] items-center rounded-[20px] border border-[#E5E7EB] bg-[#F8FAFC] px-4">
-        <Ionicons color={colors.primary} name={icon} size={19} />
+    <VStack className="gap-1.5">
+      <Text className="text-[12px] font-bold text-[#64748B]">{label}</Text>
+      <HStack
+        className="h-[46px] items-center rounded-2xl border border-[#E9EEF6] bg-[#FBFCFE] px-4"
+        style={{
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.045,
+          shadowRadius: 8,
+          elevation: 1
+        }}
+      >
+        <Ionicons color={colors.muted} name={icon} size={19} />
         <TextInput
           value={value}
           onChangeText={onChangeText}
           onFocus={onFocus}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor="#9CA3AF"
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
-          className="ml-3 flex-1 text-[15px] font-semibold text-[#111827]"
+          className="ml-3 flex-1 text-[14px] font-semibold text-[#111827]"
         />
         {trailing}
       </HStack>
@@ -70,9 +75,9 @@ function AuthField({
 
 function OrDivider() {
   return (
-    <HStack className="my-5 items-center gap-3">
+    <HStack className="my-4 items-center gap-3">
       <Box className="h-px flex-1 bg-[#E5E7EB]" />
-      <Text className="text-[12px] font-bold text-[#94A3B8]">ou continue com</Text>
+      <Text className="text-[12px] font-black text-[#9CA3AF]">OU</Text>
       <Box className="h-px flex-1 bg-[#E5E7EB]" />
     </HStack>
   )
@@ -97,6 +102,7 @@ export function AuthScreen({
   const scrollRef = useRef<ScrollView>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
+  const [view, setView] = useState<'auth' | 'forgot'>('auth')
 
   const isLogin = mode === 'login'
   const busy = loading || socialLoading
@@ -107,111 +113,59 @@ export function AuthScreen({
     })
   }
 
-  return (
-    <Box className="flex-1 bg-[#FAF7FF]">
-      <ImageBackground source={{ uri: HERO_IMAGE }} resizeMode="cover" style={{ height: 280 }}>
-        <LinearGradient
-          colors={['rgba(250,247,255,0.15)', 'rgba(15,23,42,0.12)', 'rgba(15,23,42,0.58)']}
-          locations={[0, 0.42, 1]}
-          style={absoluteFill}
-        />
+  function sendRecovery() {
+    if (!email.trim()) {
+      Alert.alert('Informe seu e-mail', 'Digite o e-mail da conta para continuar.')
+      return
+    }
 
-        <VStack
-          className="flex-1 justify-between px-6"
-          style={{ paddingTop: insets.top + 14, paddingBottom: 34 }}
-        >
-          <HStack className="items-center justify-between">
-            <BrandMark variant="light" size="sm" />
-            <Box className="rounded-full bg-white/18 px-3 py-2">
-              <Text className="text-[12px] font-bold text-white">Antes, durante e depois</Text>
-            </Box>
-          </HStack>
+    Alert.alert(
+      'Recuperação preparada',
+      'A tela já está pronta. O próximo passo é conectar no endpoint de recuperação de senha.'
+    )
+  }
 
-          <VStack>
-            <Text className="text-[34px] font-black leading-[39px] text-white">
-              Sua viagem começa aqui.
-            </Text>
-            <Text className="mt-3 text-[15px] font-semibold leading-[22px] text-white/86">
-              Entre para planejar em grupo, dividir gastos, usar IA e guardar fotos em qualidade
-              original.
-            </Text>
-          </VStack>
-        </VStack>
-      </ImageBackground>
-
+  if (view === 'forgot') {
+    return (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="-mt-8 flex-1"
+        className="flex-1 bg-white"
       >
         <ScrollView
-          ref={scrollRef}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          automaticallyAdjustKeyboardInsets
           contentContainerStyle={{
+            flexGrow: 1,
             paddingHorizontal: HORIZONTAL,
+            paddingTop: insets.top + 14,
             paddingBottom: insets.bottom + 24
           }}
         >
-          <VStack
-            className="rounded-t-[36px] bg-white px-5 pb-6 pt-5"
-            style={shadowStrong}
-          >
-            <HStack className="mb-6 rounded-full bg-[#F1F5F9] p-1.5">
-              <Pressable
-                disabled={busy}
-                onPress={() => onModeChange('login')}
-                className={`h-[44px] flex-1 items-center justify-center rounded-full ${
-                  isLogin ? 'bg-white' : 'bg-transparent'
-                }`}
-              >
-                <Text
-                  className={`text-[14px] font-black ${
-                    isLogin ? 'text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Entrar
-                </Text>
-              </Pressable>
-              <Pressable
-                disabled={busy}
-                onPress={() => onModeChange('register')}
-                className={`h-[44px] flex-1 items-center justify-center rounded-full ${
-                  !isLogin ? 'bg-white' : 'bg-transparent'
-                }`}
-              >
-                <Text
-                  className={`text-[14px] font-black ${
-                    !isLogin ? 'text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Criar conta
-                </Text>
-              </Pressable>
-            </HStack>
+          <HStack className="mb-8 items-center justify-between">
+            <Pressable
+              onPress={() => setView('auth')}
+              className="h-11 w-11 items-center justify-center rounded-full bg-white"
+              style={shadow}
+            >
+              <Ionicons color={colors.ink} name="arrow-back" size={21} />
+            </Pressable>
+            <Text className="text-[16px] font-black text-foreground">Recuperar senha</Text>
+            <Box className="h-11 w-11" />
+          </HStack>
 
-            <Text className="text-[24px] font-black leading-[30px] text-[#111827]">
-              {isLogin ? 'Bem-vinda de volta' : 'Crie seu workspace de viagem'}
+          <VStack className="flex-1 justify-center">
+            <Box className="mb-8 self-center rounded-[28px] bg-viagens-lilac p-6">
+              <Ionicons color={colors.primary} name="mail-unread-outline" size={76} />
+            </Box>
+
+            <Text className="text-[29px] font-black leading-[35px] text-foreground">
+              Bora recuperar seu acesso?
             </Text>
-            <Text className="mt-2 text-[14px] font-semibold leading-[21px] text-[#64748B]">
-              {isLogin
-                ? 'Acesse seus roteiros, grupos, fotos e ferramentas inteligentes.'
-                : 'Leva menos de um minuto para começar a organizar sua próxima viagem.'}
+            <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
+              Coloque seu e-mail e vamos te levar de volta para suas viagens.
             </Text>
 
-            <VStack className="mt-6 gap-4">
-              {!isLogin && (
-                <AuthField
-                  icon="person-outline"
-                  label="Nome"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChangeText={onNameChange}
-                  autoCapitalize="words"
-                  onFocus={scrollToForm}
-                />
-              )}
-
+            <VStack className="mt-8 gap-5">
               <AuthField
                 icon="mail-outline"
                 label="E-mail"
@@ -220,89 +174,175 @@ export function AuthScreen({
                 onChangeText={onEmailChange}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                onFocus={scrollToForm}
               />
 
-              <AuthField
-                icon="lock-closed-outline"
-                label="Senha"
-                placeholder="Digite sua senha"
-                value={password}
-                onChangeText={onPasswordChange}
-                secureTextEntry={!showPassword}
-                onFocus={scrollToForm}
-                trailing={
-                  <Pressable
-                    className="h-10 w-10 items-center justify-center"
-                    onPress={() => setShowPassword((current) => !current)}
-                  >
-                    <Ionicons
-                      color="#94A3B8"
-                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                    />
-                  </Pressable>
-                }
-              />
-            </VStack>
-
-            {isLogin && (
-              <HStack className="mt-5 items-center justify-between">
-                <RNPressable
-                  onPress={() => setRememberMe((current) => !current)}
-                  className="flex-row items-center gap-2.5"
-                >
-                  <Box
-                    className={`h-[20px] w-[20px] items-center justify-center rounded-md border-2 ${
-                      rememberMe ? 'border-primary bg-primary' : 'border-[#D1D5DB] bg-white'
-                    }`}
-                  >
-                    {rememberMe && <Ionicons color="#FFFFFF" name="checkmark" size={12} />}
-                  </Box>
-                  <Text className="text-[13px] font-semibold text-[#64748B]">Lembrar</Text>
-                </RNPressable>
-
-                <Pressable>
-                  <Text className="text-[13px] font-bold text-primary">Esqueci a senha</Text>
-                </Pressable>
-              </HStack>
-            )}
-
-            <Pressable
-              disabled={busy}
-              onPress={onSubmit}
-              className="mt-6 h-[56px] overflow-hidden rounded-full active:opacity-90 data-[disabled=true]:opacity-70"
-              style={shadowStrong}
-            >
-              <LinearGradient
-                colors={[colors.primary, '#6366F1']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+              <Pressable
+                onPress={sendRecovery}
+                className="h-[52px] items-center justify-center rounded-2xl bg-primary"
+                style={shadow}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.white} size="small" />
-                ) : (
-                  <HStack className="items-center gap-2">
-                    <Text className="text-[16px] font-black text-white">
-                      {isLogin ? 'Entrar no app' : 'Criar minha conta'}
-                    </Text>
-                    <Ionicons color={colors.white} name="arrow-forward" size={18} />
-                  </HStack>
-                )}
-              </LinearGradient>
-            </Pressable>
-
-            <OrDivider />
-
-            <SocialLoginButtons
-              loading={socialLoading}
-              loadingProvider={socialProvider}
-              onPress={onSocialLogin}
-            />
+                <Text className="text-[16px] font-black text-white">Enviar</Text>
+              </Pressable>
+            </VStack>
           </VStack>
         </ScrollView>
       </KeyboardAvoidingView>
-    </Box>
+    )
+  }
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1 bg-white"
+    >
+      <ScrollView
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: HORIZONTAL,
+          paddingTop: insets.top + 14,
+          paddingBottom: insets.bottom + 24
+        }}
+      >
+        <HStack className="mb-4 items-center justify-between">
+          <BrandMark variant="dark" size="sm" showTagline={false} />
+          <Box className="rounded-full bg-viagens-lilac px-3 py-1.5">
+            <Text className="text-[11px] font-black text-primary">App de viagem</Text>
+          </Box>
+        </HStack>
+
+        <VStack className="pt-12">
+          <Text className="text-[26px] font-black leading-[32px] text-foreground">
+            {isLogin ? 'Entre no seu espaço de viagem.' : 'Crie seu espaço de viagem.'}
+          </Text>
+          <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
+            {isLogin
+              ? 'Planeje com IA, viaje em grupo, divida gastos e guarde as memórias em qualidade original.'
+              : 'Monte um workspace para roteiro, grupo, OCR, gastos, fotos e pós-viagem.'}
+          </Text>
+
+          <HStack className="mt-5 flex-wrap gap-2">
+            {['FEFAI', 'OCR', 'Grupo', 'Fotos originais'].map((item) => (
+              <Box key={item} className="rounded-full bg-viagens-lilac px-3 py-1.5">
+                <Text className="text-[11px] font-black text-primary">{item}</Text>
+              </Box>
+            ))}
+          </HStack>
+
+          <VStack className="mt-6 gap-3.5">
+            {!isLogin && (
+              <AuthField
+                icon="person-outline"
+                label="Nome"
+                placeholder="Seu nome"
+                value={name}
+                onChangeText={onNameChange}
+                autoCapitalize="words"
+                onFocus={scrollToForm}
+              />
+            )}
+
+            <AuthField
+              icon="mail-outline"
+              label="E-mail"
+              placeholder="voce@email.com"
+              value={email}
+              onChangeText={onEmailChange}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onFocus={scrollToForm}
+            />
+
+            <AuthField
+              icon="lock-closed-outline"
+              label="Senha"
+              placeholder="Digite sua senha"
+              value={password}
+              onChangeText={onPasswordChange}
+              secureTextEntry={!showPassword}
+              onFocus={scrollToForm}
+              trailing={
+                <Pressable
+                  className="h-10 w-10 items-center justify-center"
+                  onPress={() => setShowPassword((current) => !current)}
+                >
+                  <Ionicons
+                    color="#CBD5E1"
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                  />
+                </Pressable>
+              }
+            />
+          </VStack>
+
+          {isLogin && (
+            <HStack className="mt-4 items-center justify-between">
+              <RNPressable
+                onPress={() => setRememberMe((current) => !current)}
+                className="flex-row items-center gap-2.5"
+              >
+                <Box
+                  className={`h-[18px] w-[18px] items-center justify-center rounded-md border-2 ${
+                    rememberMe ? 'border-primary bg-primary' : 'border-[#D1D5DB] bg-white'
+                  }`}
+                >
+                  {rememberMe && <Ionicons color="#FFFFFF" name="checkmark" size={12} />}
+                </Box>
+                  <Text className="text-[12px] font-semibold text-[#64748B]">Manter conectado</Text>
+              </RNPressable>
+
+              <Pressable onPress={() => setView('forgot')}>
+                <Text className="text-[12px] font-black text-primary">Esqueci a senha</Text>
+              </Pressable>
+            </HStack>
+          )}
+
+          <Pressable
+            disabled={busy}
+            onPress={onSubmit}
+            className="mt-6 h-[48px] overflow-hidden rounded-2xl active:opacity-90 data-[disabled=true]:opacity-70"
+            style={shadow}
+          >
+            <LinearGradient
+              colors={[colors.primary, '#8B5CF6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} size="small" />
+              ) : (
+                <Text className="text-[15px] font-black text-white">
+                  {isLogin ? 'Continuar' : 'Criar conta'}
+                </Text>
+              )}
+            </LinearGradient>
+          </Pressable>
+
+          <OrDivider />
+
+          <SocialLoginButtons
+            loading={socialLoading}
+            loadingProvider={socialProvider}
+            onPress={onSocialLogin}
+          />
+        </VStack>
+
+        <HStack className="mt-12 items-center justify-center">
+          <Text className="text-[13px] font-semibold text-muted-foreground">
+            {isLogin ? 'Ainda não tem conta? ' : 'Já tem conta? '}
+          </Text>
+          <Pressable disabled={busy} onPress={() => onModeChange(isLogin ? 'register' : 'login')}>
+            <Text className="text-[13px] font-black text-foreground">
+              {isLogin ? 'Criar conta' : 'Entrar'}
+            </Text>
+          </Pressable>
+        </HStack>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import React from 'react'
-import { ScrollView } from 'react-native'
+import { ImageBackground, ScrollView, StyleSheet } from 'react-native'
 import {
   Box,
   Button,
@@ -12,8 +12,7 @@ import {
   Text,
   VStack
 } from '../../components/ui'
-import { FeatureRow, MetricTile, QuickAction, SectionTitle } from '../components/shared'
-import { gradients } from '../theme'
+import { colors, shadow, shadowStrong } from '../theme'
 import type { Tab, Trip } from '../types/trip'
 
 type TodayScreenProps = {
@@ -24,13 +23,85 @@ type TodayScreenProps = {
   onNavigate: (tab: Tab) => void
 }
 
+type ExploreChip = {
+  label: string
+  icon: keyof typeof Ionicons.glyphMap
+  tab: Tab
+}
+
+type TravelCard = {
+  title: string
+  subtitle: string
+  image: string
+  icon: keyof typeof Ionicons.glyphMap
+  tab: Tab
+  accent: string
+}
+
+const absoluteFill = StyleSheet.absoluteFill
+
+const exploreChips: ExploreChip[] = [
+  { label: 'Planejar', icon: 'sparkles-outline', tab: 'tools' },
+  { label: 'Escanear', icon: 'scan-outline', tab: 'tools' },
+  { label: 'Grupo', icon: 'people-outline', tab: 'today' },
+  { label: 'Memórias', icon: 'images-outline', tab: 'memories' }
+]
+
+const travelCards: TravelCard[] = [
+  {
+    title: 'FEFAI no roteiro',
+    subtitle: 'Sugere, explica e adapta sem decidir por você.',
+    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
+    icon: 'sparkles',
+    tab: 'tools',
+    accent: colors.primary
+  },
+  {
+    title: 'Grupo no mesmo plano',
+    subtitle: 'Chat, localização, check-ins e divisão de gastos.',
+    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
+    icon: 'people',
+    tab: 'today',
+    accent: colors.sky
+  },
+  {
+    title: 'Fotos sem perder qualidade',
+    subtitle: 'Álbum, timeline, mapa vivido e passaporte digital.',
+    image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80',
+    icon: 'images',
+    tab: 'memories',
+    accent: colors.mint
+  }
+]
+
+const itinerary = [
+  {
+    title: 'Checar documentos',
+    detail: 'Passaporte, seguro e reservas offline',
+    icon: 'document-text-outline' as const,
+    time: 'Pré'
+  },
+  {
+    title: 'Converter conta pela câmera',
+    detail: 'OCR de preço + moeda + divisão no grupo',
+    icon: 'scan-outline' as const,
+    time: 'Durante'
+  },
+  {
+    title: 'Montar retrospectiva',
+    detail: 'Fotos originais, mapa e diário da viagem',
+    icon: 'sparkles-outline' as const,
+    time: 'Pós'
+  }
+]
+
 function formatDateRange(start?: string, end?: string) {
-  if (!start) return 'Datas a definir'
+  if (!start) return 'Datas flexíveis'
   const startDate = new Date(start)
   const endDate = end ? new Date(end) : null
-  const fmt = (d: Date) => d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
+  const fmt = (date: Date) => date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
   if (!endDate) return fmt(startDate)
-  return `${fmt(startDate)} – ${fmt(endDate)}`
+  return `${fmt(startDate)} - ${fmt(endDate)}`
 }
 
 function getTripPhase(start?: string, end?: string): { label: string; color: string } {
@@ -38,139 +109,249 @@ function getTripPhase(start?: string, end?: string): { label: string; color: str
   const startMs = start ? new Date(start).getTime() : null
   const endMs = end ? new Date(end).getTime() : null
 
-  if (startMs && now < startMs) return { label: 'Antes da viagem', color: '#0EA5E9' }
-  if (endMs && now > endMs) return { label: 'Depois da viagem', color: '#10B981' }
-  if (startMs && (!endMs || now <= endMs)) return { label: 'Durante a viagem', color: '#F97316' }
-  return { label: 'Planejamento', color: '#7B4DFF' }
+  if (startMs && now < startMs) return { label: 'Antes da viagem', color: colors.sky }
+  if (endMs && now > endMs) return { label: 'Depois da viagem', color: colors.mint }
+  if (startMs && (!endMs || now <= endMs)) return { label: 'Durante a viagem', color: colors.orange }
+  return { label: 'Planejamento', color: colors.primary }
 }
 
-const steps = [
-  { step: '01', title: 'Comece por uma ideia', desc: 'Destino, inspiração ou tipo de viagem com ajuda da FEFAI.', color: '#7B4DFF' },
-  { step: '02', title: 'Organize com o grupo', desc: 'Roteiro, checklist, gastos e check-ins no mesmo espaço.', color: '#0EA5E9' },
-  { step: '03', title: 'Guarde a memória', desc: 'Fotos originais, timeline e passaporte digital.', color: '#10B981' }
-]
-
-export function TodayScreen({ selectedTrip, trips, loading, onCreateTrip, onNavigate }: TodayScreenProps) {
+export function TodayScreen({
+  selectedTrip,
+  trips,
+  loading,
+  onCreateTrip,
+  onNavigate
+}: TodayScreenProps) {
   const phase = getTripPhase(selectedTrip?.start_date, selectedTrip?.end_date)
   const destination = selectedTrip
     ? `${selectedTrip.destination}${selectedTrip.country ? `, ${selectedTrip.country}` : ''}`
-    : null
+    : 'Sua próxima viagem'
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
-      <Text className="mb-5 text-3xl font-black leading-10 text-foreground">
-        Vamos planejar{'\n'}sua viagem ✈️
-      </Text>
-
-      <Box className="mb-6 overflow-hidden rounded-3xl shadow-soft-3">
-        <LinearGradient
-          colors={[...gradients.hero]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ padding: 24 }}
-        >
-        <HStack className="mb-4 items-center justify-between">
-          <HStack className="items-center gap-2 rounded-full bg-white/20 px-3 py-2">
-            <Box className="h-2 w-2 rounded-full" style={{ backgroundColor: phase.color }} />
-            <Text className="text-xs font-extrabold text-white">{phase.label}</Text>
-          </HStack>
-          {selectedTrip?.base_currency && (
-            <Box className="rounded-full bg-white/20 px-3 py-2">
-              <Text className="text-xs font-black text-white">{selectedTrip.base_currency}</Text>
-            </Box>
-          )}
-        </HStack>
-
-        <Text className="text-3xl font-black leading-9 text-white">
-          {destination || 'Crie sua primeira viagem'}
-        </Text>
-        <Text className="mb-5 mt-2 text-sm font-semibold leading-6 text-white/85">
-          {selectedTrip
-            ? formatDateRange(selectedTrip.start_date, selectedTrip.end_date)
-            : 'Roteiro, grupo, gastos e memórias em um só lugar.'}
-        </Text>
-
-        {!selectedTrip && (
-          <Button
-            size="lg"
-            className="h-14 rounded-2xl bg-white data-[active=true]:bg-white/90"
-            onPress={onCreateTrip}
-            disabled={loading}
-          >
-            {loading ? (
-              <ButtonSpinner color="#7B4DFF" />
-            ) : (
-              <ButtonText className="text-base font-black text-primary">
-                + Criar viagem exemplo
-              </ButtonText>
-            )}
-          </Button>
-        )}
-        </LinearGradient>
-      </Box>
-
-      <SectionTitle
-        kicker="Acesso rápido"
-        title="Ferramentas nativas"
-        subtitle="O que torna o app diferente do WhatsApp + planilha."
-      />
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6" contentContainerClassName="gap-4">
-        <QuickAction color="#7B4DFF" icon="sparkles" label="FEFAI" onPress={() => onNavigate('tools')} />
-        <QuickAction color="#0EA5E9" icon="scan" label="Câmera OCR" onPress={() => onNavigate('tools')} />
-        <QuickAction color="#10B981" icon="location" label="Check-in" onPress={() => onNavigate('tools')} />
-        <QuickAction color="#F97316" icon="receipt" label="Gastos" onPress={() => onNavigate('tools')} />
-        <QuickAction color="#5E35D9" icon="images" label="Memórias" onPress={() => onNavigate('memories')} />
-      </ScrollView>
-
-      <SectionTitle kicker="Resumo" title="Seu workspace" />
-
-      <HStack className="mb-6 flex-wrap gap-3">
-        <MetricTile
-          color="#7B4DFF"
-          icon="checkbox-outline"
-          label="Checklist"
-          value={String(selectedTrip?.checklist_items?.length || 0)}
-          bgClass="bg-viagens-lilac"
-        />
-        <MetricTile
-          color="#0EA5E9"
-          icon="receipt-outline"
-          label="Gastos"
-          value={String(selectedTrip?.expenses?.length || 0)}
-          bgClass="bg-viagens-sky-soft"
-        />
-        <MetricTile
-          color="#10B981"
-          icon="image-outline"
-          label="Fotos"
-          value={String(selectedTrip?.photos?.length || 0)}
-          bgClass="bg-viagens-mint-soft"
-        />
-        <MetricTile
-          color="#F97316"
-          icon="airplane-outline"
-          label="Viagens"
-          value={String(trips.length)}
-          bgClass="bg-viagens-orange-soft"
-        />
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 30 }}
+    >
+      <HStack className="mb-4 items-center justify-between">
+        <VStack>
+          <Text className="text-[15px] font-bold text-muted-foreground">Olá, viajante</Text>
+          <Text className="mt-1 text-[33px] font-black leading-[38px] text-foreground">
+            Sua viagem{'\n'}em um só lugar
+          </Text>
+        </VStack>
+        <Box className="h-[64px] w-[52px] items-center justify-center rounded-full bg-white shadow-soft-2">
+          <Ionicons color={colors.primary} name="search" size={24} />
+        </Box>
       </HStack>
 
-      <Text className="mb-3 text-lg font-black text-foreground">Fluxo da viagem</Text>
+      <HStack className="mb-5 items-center gap-3 rounded-full bg-white p-2 shadow-soft-1">
+        <Box className="h-11 w-11 items-center justify-center rounded-full bg-viagens-lilac">
+          <Ionicons color={colors.primary} name="sparkles" size={20} />
+        </Box>
+        <VStack className="flex-1">
+          <Text className="text-[12px] font-bold uppercase text-muted-foreground">
+            Pergunte para a FEFAI
+          </Text>
+          <Text className="text-[14px] font-black text-foreground" numberOfLines={1}>
+            Planejar, converter, dividir ou guardar?
+          </Text>
+        </VStack>
+        <Pressable
+          onPress={() => onNavigate('tools')}
+          className="h-11 w-11 items-center justify-center rounded-full bg-primary"
+        >
+          <Ionicons color={colors.white} name="arrow-forward" size={18} />
+        </Pressable>
+      </HStack>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-5"
+        contentContainerStyle={{ gap: 10 }}
+      >
+        {exploreChips.map((chip, index) => {
+          const active = index === 0
+          return (
+            <Pressable
+              key={chip.label}
+              onPress={() => onNavigate(chip.tab)}
+              className={`flex-row items-center gap-2 rounded-full px-4 py-3 ${
+                active ? 'bg-primary' : 'bg-white'
+              }`}
+              style={shadow}
+            >
+              <Ionicons
+                color={active ? colors.white : colors.primary}
+                name={chip.icon}
+                size={16}
+              />
+              <Text
+                className={`text-[13px] font-black ${
+                  active ? 'text-white' : 'text-foreground'
+                }`}
+              >
+                {chip.label}
+              </Text>
+            </Pressable>
+          )
+        })}
+      </ScrollView>
+
+      <Box className="mb-6 overflow-hidden rounded-[32px] bg-white" style={shadowStrong}>
+        <ImageBackground
+          source={{
+            uri: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=85'
+          }}
+          resizeMode="cover"
+          style={{ height: 250 }}
+        >
+          <LinearGradient
+            colors={['rgba(17,24,39,0.05)', 'rgba(17,24,39,0.18)', 'rgba(17,24,39,0.72)']}
+            locations={[0, 0.42, 1]}
+            style={absoluteFill}
+          />
+          <VStack className="flex-1 justify-end p-5">
+            <HStack className="mb-3 items-center gap-2">
+              <Box
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: phase.color }}
+              />
+              <Text className="text-[12px] font-black uppercase text-white/85">
+                {phase.label}
+              </Text>
+            </HStack>
+
+            <Text className="text-[32px] font-black leading-[38px] text-white">
+              {destination}
+            </Text>
+            <Text className="mt-2 text-[14px] font-bold leading-5 text-white/86">
+              {selectedTrip
+                ? formatDateRange(selectedTrip.start_date, selectedTrip.end_date)
+                : 'Crie um workspace vivo para roteiro, grupo, gastos, segurança e memórias.'}
+            </Text>
+          </VStack>
+        </ImageBackground>
+
+        <VStack className="p-5">
+          <HStack className="mb-4 items-center justify-between">
+            <InfoPill icon="calendar-outline" label={formatDateRange(selectedTrip?.start_date, selectedTrip?.end_date)} />
+            <InfoPill icon="people-outline" label="Grupo pronto" />
+            <InfoPill icon="wallet-outline" label={selectedTrip?.base_currency || 'BRL'} />
+          </HStack>
+
+          {!selectedTrip ? (
+            <Button
+              size="lg"
+              className="h-14 rounded-full bg-primary data-[active=true]:bg-primary/90"
+              onPress={onCreateTrip}
+              disabled={loading}
+            >
+              {loading ? (
+                <ButtonSpinner color="#FFFFFF" />
+              ) : (
+                <ButtonText className="text-base font-black text-white">
+                  Criar viagem exemplo
+                </ButtonText>
+              )}
+            </Button>
+          ) : (
+            <HStack className="gap-3">
+              <Pressable
+                onPress={() => onNavigate('tools')}
+                className="h-12 flex-1 items-center justify-center rounded-full bg-primary"
+              >
+                <Text className="font-black text-white">Usar FEFAI</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => onNavigate('memories')}
+                className="h-12 flex-1 items-center justify-center rounded-full bg-viagens-lilac"
+              >
+                <Text className="font-black text-primary">Memórias</Text>
+              </Pressable>
+            </HStack>
+          )}
+        </VStack>
+      </Box>
+
+      <HStack className="mb-3 items-center justify-between">
+        <Text className="text-[20px] font-black text-foreground">O que resolver agora?</Text>
+        <Pressable onPress={() => onNavigate('tools')}>
+          <Text className="text-[13px] font-black text-primary">Ver tudo</Text>
+        </Pressable>
+      </HStack>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="mb-6"
+        contentContainerStyle={{ gap: 14 }}
+      >
+        {travelCards.map((card) => (
+          <Pressable
+            key={card.title}
+            onPress={() => onNavigate(card.tab)}
+            className="w-[214px] overflow-hidden rounded-[28px] bg-white"
+            style={shadow}
+          >
+            <ImageBackground source={{ uri: card.image }} resizeMode="cover" style={{ height: 142 }}>
+              <LinearGradient
+                colors={['rgba(15,23,42,0.02)', 'rgba(15,23,42,0.55)']}
+                style={absoluteFill}
+              />
+              <Box className="absolute right-3 top-3 h-11 w-11 items-center justify-center rounded-full bg-white/80">
+                <Ionicons color={card.accent} name={card.icon} size={20} />
+              </Box>
+            </ImageBackground>
+            <VStack className="p-4">
+              <Text className="text-[17px] font-black text-foreground">{card.title}</Text>
+              <Text className="mt-1 text-[12px] font-bold leading-5 text-muted-foreground">
+                {card.subtitle}
+              </Text>
+            </VStack>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      <HStack className="mb-3 items-center justify-between">
+        <Text className="text-[20px] font-black text-foreground">Próximas ações</Text>
+        <Text className="text-[13px] font-black text-muted-foreground">{trips.length} viagens</Text>
+      </HStack>
+
       <VStack className="gap-3">
-        {steps.map((item) => (
-          <HStack key={item.step} className="items-center gap-3 rounded-3xl border border-border bg-card p-4 shadow-soft-1">
-            <Box className="h-10 w-10 items-center justify-center rounded-2xl" style={{ backgroundColor: item.color }}>
-              <Text className="text-sm font-black text-white">{item.step}</Text>
+        {itinerary.map((item) => (
+          <HStack key={item.title} className="items-center gap-4 rounded-[28px] bg-white p-3" style={shadow}>
+            <Box className="h-[86px] w-[86px] items-center justify-center rounded-[24px] bg-viagens-lilac">
+              <Ionicons color={colors.primary} name={item.icon} size={30} />
             </Box>
             <VStack className="flex-1">
-              <Text className="font-black text-foreground">{item.title}</Text>
-              <Text className="mt-0.5 text-sm font-semibold leading-5 text-muted-foreground">{item.desc}</Text>
+              <Text className="text-[11px] font-black uppercase text-primary">{item.time}</Text>
+              <Text className="mt-1 text-[17px] font-black text-foreground">{item.title}</Text>
+              <Text className="mt-1 text-[12px] font-bold leading-5 text-muted-foreground">
+                {item.detail}
+              </Text>
             </VStack>
-            <Ionicons color="#94A3B8" name="chevron-forward" size={18} />
+            <Ionicons color={colors.mutedLight} name="chevron-forward" size={18} />
           </HStack>
         ))}
       </VStack>
     </ScrollView>
+  )
+}
+
+function InfoPill({
+  icon,
+  label
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+}) {
+  return (
+    <HStack className="items-center gap-1.5 rounded-full bg-viagens-lilac px-3 py-2">
+      <Ionicons color={colors.primary} name={icon} size={14} />
+      <Text className="text-[11px] font-black text-foreground" numberOfLines={1}>
+        {label}
+      </Text>
+    </HStack>
   )
 }
