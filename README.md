@@ -63,20 +63,40 @@ Emulador diferente: `ANDROID_AVD=Medium_Phone_API_36.1 npm run android:emulator`
 
 ## Gerar APK
 
-```bash
-npm install
-npx eas login
-npm run build:apk
-```
+O APK e compilado localmente. A VPS recebe apenas o arquivo `.apk` pronto para download publico.
 
-Para build local Android:
+Crie um `.env.local` a partir do exemplo:
 
 ```bash
-npm install
-npm run prebuild:android
-cd android
-./gradlew assembleDebug
+cp .env.example .env.local
 ```
+
+Depois ajuste os dados de publicacao no `.env.local`.
+
+Gerar APK release local:
+
+```bash
+npm install
+npm run build-apk
+```
+
+Publicar o APK pronto:
+
+```bash
+npm run publish-apk
+```
+
+O build local gera:
+
+```text
+viagens-by-up-your-idea-public-preview.apk
+```
+
+Fluxo importante:
+
+- `npm run build-apk`: compila localmente e nao publica.
+- `npm run publish-apk`: envia apenas o APK pronto para o servidor.
+- Nao usamos pipeline GitHub Actions para compilar APK neste repositorio.
 
 ## Direcao do produto mobile
 

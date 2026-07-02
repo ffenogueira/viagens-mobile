@@ -2,7 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
 APK_NAME="viagens-by-up-your-idea-public-preview.apk"
+
 JAVA_21_HOME="/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
 JAVA_DEFAULT_HOME="/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home"
 
@@ -22,8 +24,6 @@ fi
 
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if [[ -s "$NVM_DIR/nvm.sh" ]]; then
-  # Expo SDK atual exige Node >= 20.19.4; usamos a linha 22 do projeto.
-  # shellcheck source=/dev/null
   . "$NVM_DIR/nvm.sh"
   nvm use 22 >/dev/null
 fi
@@ -50,8 +50,8 @@ npx expo prebuild --platform android
 
 echo ""
 echo "→ Aplicando patches locais Android..."
-bash "$ROOT_DIR/scripts/patch-android-node.sh"
-bash "$ROOT_DIR/scripts/patch-expo-path-spaces.sh"
+[[ -f "$ROOT_DIR/scripts/patch-android-node.sh" ]] && bash "$ROOT_DIR/scripts/patch-android-node.sh"
+[[ -f "$ROOT_DIR/scripts/patch-expo-path-spaces.sh" ]] && bash "$ROOT_DIR/scripts/patch-expo-path-spaces.sh"
 
 echo ""
 echo "→ Parando Gradle daemons antigos..."
@@ -73,5 +73,10 @@ cp "$ROOT_DIR/android/app/build/outputs/apk/release/app-release.apk" "$ROOT_DIR/
 ls -lh "$ROOT_DIR/$APK_NAME"
 
 echo ""
-echo "Build local concluido:"
+echo "✅ Build local concluído."
+echo ""
+echo "Arquivo local:"
 echo "$ROOT_DIR/$APK_NAME"
+echo ""
+echo "Para publicar:"
+echo "npm run publish-apk"
