@@ -24,6 +24,7 @@ fi
 
 NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  unset npm_config_prefix
   . "$NVM_DIR/nvm.sh"
   nvm use 22 >/dev/null
 fi
