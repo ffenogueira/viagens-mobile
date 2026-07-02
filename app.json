@@ -24,7 +24,8 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "READ_MEDIA_IMAGES"
-      ]
+      ],
+      "versionCode": 5
     },
     "extra": {
       "apiUrl": "https://api-viagens.upyouridea.com.br/v1"
