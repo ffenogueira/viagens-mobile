@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, TextInput } from 'react-native'
+import { ActivityIndicator, Alert, Share, TextInput } from 'react-native'
 import {
   Box,
   Button,
@@ -11,10 +11,17 @@ import {
   Text,
   VStack
 } from '../../components/ui'
-import { fetchTrip, sendChatMessage } from '../api/client'
+import { createTripInvite, fetchTrip, sendChatMessage } from '../api/client'
 import { EmptyTripNotice, OverlayScreenLayout } from '../components/OverlayScreenLayout'
+import { UserAvatar } from '../components/UserAvatar'
 import { colors, shadow } from '../theme'
-import type { ChatMessage, Trip } from '../types/trip'
+import type { ChatMessage, Trip, TripMember } from '../types/trip'
+
+function memberRoleLabel(role?: string) {
+  if (role === 'OWNER' || role === 'ORGANIZER') return 'Organizador'
+  if (role === 'VIEWER') return 'Convidado'
+  return 'Viajante'
+}
 
 export function GroupChatScreen({
   selectedTrip,
@@ -25,8 +32,9 @@ export function GroupChatScreen({
 }) {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [inviting, setInviting] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [membersCount, setMembersCount] = useState(1)
+  const [members, setMembers] = useState<TripMember[]>([])
   const [draft, setDraft] = useState('')
 
   async function loadTrip() {
@@ -35,7 +43,7 @@ export function GroupChatScreen({
     try {
       const trip = await fetchTrip(selectedTrip.id)
       setMessages(trip.messages ?? [])
-      setMembersCount(Math.max(trip.members?.length ?? 1, 1))
+      setMembers(trip.members ?? [])
     } catch (error) {
       Alert.alert('Chat indisponível', error instanceof Error ? error.message : 'Tente novamente.')
     } finally {
@@ -46,6 +54,26 @@ export function GroupChatScreen({
   useEffect(() => {
     void loadTrip()
   }, [selectedTrip?.id])
+
+  async function inviteFriends() {
+    if (!selectedTrip) return
+    setInviting(true)
+    try {
+      const token = await createTripInvite(selectedTrip.id)
+      if (!token) {
+        throw new Error('Não foi possível gerar o convite.')
+      }
+      const link = `https://viagens.upyouridea.com.br/app?invite=${token}`
+      await Share.share({
+        message: `Vem planejar ${selectedTrip.destination} comigo no Viagens! ${link}`,
+        url: link
+      })
+    } catch (error) {
+      Alert.alert('Convite', error instanceof Error ? error.message : 'Não foi possível compartilhar o convite.')
+    } finally {
+      setInviting(false)
+    }
+  }
 
   async function submitMessage() {
     if (!selectedTrip || !draft.trim()) return
@@ -65,13 +93,15 @@ export function GroupChatScreen({
     return <EmptyTripNotice onBack={onBack} />
   }
 
+  const membersCount = Math.max(members.length, 1)
+
   return (
     <OverlayScreenLayout
       title="Chat do grupo"
       subtitle={
         membersCount > 1
           ? `${membersCount} pessoas nesta viagem`
-          : 'Convide amigos para combinar tudo no mesmo lugar.'
+          : 'Convide amigos para combinar roteiro, gastos e avisos juntos.'
       }
       onBack={onBack}
     >
@@ -79,15 +109,63 @@ export function GroupChatScreen({
         <ActivityIndicator color={colors.primary} className="my-10" />
       ) : (
         <VStack className="gap-4">
-          {membersCount <= 1 ? (
-            <Box className="rounded-[24px] border border-[#EDE9FE] bg-viagens-lilac p-4">
-              <Text className="text-[14px] font-semibold leading-6 text-primary">
-                Você ainda está solo nesta viagem. Use “Convidar amigos” na home para abrir o chat em grupo.
-              </Text>
-            </Box>
-          ) : null}
+          <Box className="rounded-[24px] border border-[#EEF2FF] bg-white p-4" style={shadow}>
+            <HStack className="items-center justify-between">
+              <VStack>
+                <Text className="text-[11px] font-black uppercase tracking-[1.4px] text-muted-foreground">
+                  Grupo da viagem
+                </Text>
+                <Text className="mt-1 text-[18px] font-black text-foreground">{selectedTrip.destination}</Text>
+              </VStack>
+              <Box className="rounded-full bg-viagens-lilac px-3 py-1.5">
+                <Text className="text-[12px] font-black text-primary">{membersCount}</Text>
+              </Box>
+            </HStack>
+
+            <VStack className="mt-4 gap-3">
+              {members.length ? (
+                members.map((member) => (
+                  <HStack key={member.id} className="items-center gap-3">
+                    <UserAvatar name={member.user.name} className="h-11 w-11" />
+                    <VStack className="flex-1">
+                      <Text className="text-[15px] font-black text-foreground">{member.user.name}</Text>
+                      <Text className="text-[12px] font-semibold text-muted-foreground">
+                        {memberRoleLabel(member.role)}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                ))
+              ) : (
+                <Text className="text-[14px] font-semibold text-muted-foreground">
+                  Você é o primeiro por aqui. Convide quem vai viajar com você.
+                </Text>
+              )}
+            </VStack>
+
+            <Pressable
+              onPress={() => void inviteFriends()}
+              disabled={inviting}
+              className="mt-4 h-12 flex-row items-center justify-center gap-2 rounded-full bg-primary"
+            >
+              {inviting ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons color={colors.white} name="person-add-outline" size={18} />
+                  <Text className="text-[15px] font-black text-white">Convidar amigos</Text>
+                </>
+              )}
+            </Pressable>
+
+            <Text className="mt-3 text-center text-[12px] font-semibold leading-5 text-muted-foreground">
+              Envie o link por WhatsApp, iMessage ou qualquer app. Quem abrir entra na viagem e no chat.
+            </Text>
+          </Box>
 
           <VStack className="gap-3">
+            <Text className="text-[11px] font-black uppercase tracking-[1.4px] text-muted-foreground">
+              Mensagens
+            </Text>
             {messages.length === 0 ? (
               <Text className="text-sm font-semibold text-muted-foreground">
                 Nenhuma mensagem ainda. Combine horários, dicas e avisos aqui.

@@ -268,12 +268,14 @@ function AppContent() {
 
     if (shortcut === 'group') {
       setWorkspaceToolsPanel(null)
+      setOverlayReturn('trip-workspace')
       setOverlay('group-chat')
       return
     }
 
     if (shortcut === 'budget') {
       setWorkspaceToolsPanel(null)
+      setOverlayReturn('trip-workspace')
       setOverlay('expenses')
       return
     }
@@ -377,11 +379,11 @@ function AppContent() {
             onTripDeleted={handleTripDeleted}
           />
         ) : overlay === 'weather' ? (
-          <WeatherScreen selectedTrip={selectedTrip} onBack={closeOverlay} />
+          <WeatherScreen selectedTrip={selectedTrip} onBack={backFromOverlay} />
         ) : overlay === 'expenses' ? (
           <ExpensesScreen
             selectedTrip={selectedTrip}
-            onBack={closeOverlay}
+            onBack={backFromOverlay}
             onOpenBillSplit={() => {
               setOverlayReturn('expenses')
               setOverlay('bill-split')
@@ -390,7 +392,7 @@ function AppContent() {
         ) : overlay === 'bill-split' ? (
           <BillSplitScreen selectedTrip={selectedTrip} onBack={backFromOverlay} />
         ) : overlay === 'group-chat' ? (
-          <GroupChatScreen selectedTrip={selectedTrip} onBack={closeOverlay} />
+          <GroupChatScreen selectedTrip={selectedTrip} onBack={backFromOverlay} />
         ) : (
           <>
             {tab === 'today' && (
