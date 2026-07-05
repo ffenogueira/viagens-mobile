@@ -22,7 +22,6 @@ import {
   VStack
 } from '../../components/ui'
 import {
-  addChecklistItem,
   addTripItineraryItem,
   createTripInvite,
   fetchTrip,
@@ -36,6 +35,7 @@ import {
 } from '../api/client'
 import { BrazilianDateField } from '../components/BrazilianDateField'
 import { DestinationAutocomplete } from '../components/DestinationAutocomplete'
+import { TripBoardSheet, TripChecklistSheet, TripWishlistSheet } from '../components/TripToolsSheets'
 import { TripMapModal } from '../components/TripMapModal'
 import { TripMapCanvas } from '../components/TripMapCanvas'
 import { TripMapView } from '../components/TripMapView'
@@ -53,7 +53,7 @@ import {
 import { formatPlaceTime, normalizeTime, periodFromTime, periodIcon } from '../lib/placeSchedule'
 import { loadTripMedia, saveLocalPlaces, setPlacePhotoLocal, setTripCoverLocal, type TripMediaCache } from '../storage/tripMedia'
 import { colors, shadow, shadowStrong } from '../theme'
-import type { ActivitySuggestion, NavigationTarget, Trip, TripDayItem } from '../types/trip'
+import type { ActivitySuggestion, NavigationTarget, Trip, TripDayItem, TripToolsPanel } from '../types/trip'
 
 const ROLE_STYLES = ['Gastronomia', 'Cultura', 'Natureza', 'Compras', 'Vida noturna', 'Família', 'Aventura', 'Relax'] as const
 
@@ -125,13 +125,15 @@ export function TripWorkspaceScreen({
   onBack,
   onNavigate,
   onTripUpdated,
-  onTripDeleted
+  onTripDeleted,
+  initialToolsPanel = null
 }: {
   trip: Trip | null
   onBack: () => void
   onNavigate: (target: NavigationTarget) => void
   onTripUpdated?: (trip: Trip) => void
   onTripDeleted?: (tripId: string) => void
+  initialToolsPanel?: TripToolsPanel | null
 }) {
   const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(Boolean(trip))
@@ -168,6 +170,27 @@ export function TripWorkspaceScreen({
   const [tripMapLoading, setTripMapLoading] = useState(false)
   const [mapModalOpen, setMapModalOpen] = useState(false)
   const [placePreviewMarkers, setPlacePreviewMarkers] = useState<LeafletMapMarker[]>([])
+  const [toolsPanel, setToolsPanel] = useState<TripToolsPanel | null>(initialToolsPanel)
+
+  useEffect(() => {
+    setToolsPanel(initialToolsPanel)
+  }, [initialToolsPanel, trip?.id])
+
+  async function refreshTripData() {
+    const activeTrip = tripData ?? trip
+    if (!activeTrip?.id) return
+    const fresh = await fetchTrip(activeTrip.id)
+    setTripData(fresh)
+    onTripUpdated?.(fresh)
+  }
+
+  function openAddPlaceFromWishlist(title: string) {
+    setPlaceDraft(title)
+    setPlaceDescriptionDraft('')
+    setPlaceTimeDraft('')
+    setPlacePhotoDraft(null)
+    setAddPlaceOpen(true)
+  }
 
   useEffect(() => {
     if (!trip?.id) return
@@ -584,7 +607,10 @@ export function TripWorkspaceScreen({
     }
   }
 
+  const wishlistCount = currentTrip?.wishlist_items?.length ?? 0
   const checklistTotal = currentTrip?.checklist_items?.length ?? 0
+  const checklistDone = currentTrip?.checklist_items?.filter((item) => item.isCompleted).length ?? 0
+  const boardCount = currentTrip?.journal_entries?.length ?? 0
   const membersCount = Math.max(currentTrip?.members?.length ?? 1, 1)
   const expenseTotal = (currentTrip?.expenses ?? []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
   const currency = currentTrip?.base_currency ?? 'BRL'
@@ -690,24 +716,16 @@ export function TripWorkspaceScreen({
             Atalhos da viagem
           </Text>
           <TripToolsBar
-            checklistTotal={checklistTotal}
+            wishlistCount={wishlistCount}
+            checklistLabel={checklistTotal ? `${checklistDone}/${checklistTotal}` : '0'}
             membersCount={membersCount}
             expenseLabel={expenseTotal > 0 ? `${Math.round(expenseTotal)} ${currency}` : currency}
-            onWishlist={() => Alert.alert('Wishlist', 'Salve lugares que quer visitar — em breve.')}
-            onChecklist={() => {
-              void (async () => {
-                try {
-                  await addChecklistItem(currentTrip.id, 'Passaporte e documentos')
-                  Alert.alert('Checklist', 'Tarefa adicionada à viagem.')
-                  setTripData(await fetchTrip(currentTrip.id))
-                } catch (error) {
-                  Alert.alert('Checklist', error instanceof Error ? error.message : 'Tente novamente.')
-                }
-              })()
-            }}
+            boardLabel={boardCount ? String(boardCount) : 'Notas'}
+            onWishlist={() => setToolsPanel('wishlist')}
+            onChecklist={() => setToolsPanel('checklist')}
             onTravelers={() => onNavigate('group-chat')}
             onBudget={() => onNavigate('expenses')}
-            onBoard={() => onNavigate('memories')}
+            onBoard={() => setToolsPanel('board')}
           />
 
           <Text className="mb-3 mt-8 text-[11px] font-black uppercase tracking-[1.6px] text-muted-foreground">
@@ -1203,6 +1221,29 @@ export function TripWorkspaceScreen({
         destination={currentTrip.destination}
         onClose={() => setMapModalOpen(false)}
       />
+
+      <TripWishlistSheet
+        visible={toolsPanel === 'wishlist'}
+        trip={currentTrip}
+        items={currentTrip.wishlist_items ?? []}
+        onClose={() => setToolsPanel(null)}
+        onRefresh={refreshTripData}
+        onAddToDay={openAddPlaceFromWishlist}
+      />
+      <TripChecklistSheet
+        visible={toolsPanel === 'checklist'}
+        trip={currentTrip}
+        items={currentTrip.checklist_items ?? []}
+        onClose={() => setToolsPanel(null)}
+        onRefresh={refreshTripData}
+      />
+      <TripBoardSheet
+        visible={toolsPanel === 'board'}
+        trip={currentTrip}
+        entries={currentTrip.journal_entries ?? []}
+        onClose={() => setToolsPanel(null)}
+        onRefresh={refreshTripData}
+      />
     </Box>
   )
 }
@@ -1222,18 +1263,22 @@ function HeaderIcon({
 }
 
 function TripToolsBar({
-  checklistTotal,
+  wishlistCount,
+  checklistLabel,
   membersCount,
   expenseLabel,
+  boardLabel,
   onWishlist,
   onChecklist,
   onTravelers,
   onBudget,
   onBoard
 }: {
-  checklistTotal: number
+  wishlistCount: number
+  checklistLabel: string
   membersCount: number
   expenseLabel: string
+  boardLabel: string
   onWishlist: () => void
   onChecklist: () => void
   onTravelers: () => void
@@ -1241,11 +1286,11 @@ function TripToolsBar({
   onBoard: () => void
 }) {
   const tools = [
-    { icon: 'star-outline' as const, label: 'Wishlist', value: '0', color: colors.orange, onPress: onWishlist },
+    { icon: 'star-outline' as const, label: 'Wishlist', value: String(wishlistCount), color: colors.orange, onPress: onWishlist },
     {
       icon: 'checkmark-circle-outline' as const,
       label: 'Checklist',
-      value: String(checklistTotal),
+      value: checklistLabel,
       color: colors.mint,
       onPress: onChecklist
     },
@@ -1266,7 +1311,7 @@ function TripToolsBar({
     {
       icon: 'document-text-outline' as const,
       label: 'Mural',
-      value: 'Notas',
+      value: boardLabel,
       color: colors.primary,
       onPress: onBoard
     }

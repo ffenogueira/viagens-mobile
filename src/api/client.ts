@@ -4,9 +4,12 @@ import type {
   ChatMessage,
   ExpenseBalance,
   Trip,
+  TripChecklistItem,
   TripDayPlan,
   TripExpense,
+  TripJournalEntry,
   TripMember,
+  TripWishlistItem,
   WeatherDay
 } from '../types/trip'
 
@@ -71,8 +74,46 @@ function parseTripMetadata(raw: unknown): {
   }
 }
 
+function normalizeWishlistItem(raw: Record<string, unknown>): TripWishlistItem {
+  return {
+    id: String(raw.id),
+    title: String(raw.title ?? 'Lugar'),
+    source: String(raw.source ?? 'wishlist'),
+    notes: raw.notes ? String(raw.notes) : null,
+    url: raw.url ? String(raw.url) : null
+  }
+}
+
+function normalizeChecklistItem(raw: Record<string, unknown>): TripChecklistItem {
+  return {
+    id: String(raw.id),
+    title: String(raw.title ?? 'Tarefa'),
+    category: raw.category ? String(raw.category) : null,
+    isCompleted: Boolean(raw.isCompleted ?? raw.is_completed ?? raw.is_done)
+  }
+}
+
+function normalizeJournalEntry(raw: Record<string, unknown>): TripJournalEntry {
+  const userRaw = (raw.user && typeof raw.user === 'object' ? raw.user : {}) as Record<string, unknown>
+  return {
+    id: String(raw.id),
+    title: raw.title ? String(raw.title) : null,
+    body: String(raw.body ?? ''),
+    createdAt: String(raw.createdAt ?? raw.created_at ?? new Date().toISOString()),
+    user: userRaw.id
+      ? {
+          id: String(userRaw.id),
+          name: String(userRaw.name ?? 'Viajante'),
+          handle: userRaw.handle ? String(userRaw.handle) : null
+        }
+      : undefined
+  }
+}
+
 export function normalizeTrip(raw: Record<string, unknown>): Trip {
   const checklist = raw.checklist_items ?? raw.checklistItems ?? []
+  const intentions = raw.intentions ?? raw.wishlist_items ?? []
+  const journalRaw = raw.journal_entries ?? raw.journalEntries ?? []
   const expensesRaw = raw.expenses ?? []
   const photos = raw.photos ?? []
   const membersRaw = raw.members ?? []
@@ -96,7 +137,21 @@ export function normalizeTrip(raw: Record<string, unknown>): Trip {
     end_date: endsAt ? String(endsAt).slice(0, 10) : undefined,
     base_currency: String(raw.base_currency ?? raw.budgetCurrency ?? 'BRL'),
     cover_image_url: tripMetadata.coverImageUrl,
-    checklist_items: Array.isArray(checklist) ? checklist : [],
+    wishlist_items: Array.isArray(intentions)
+      ? intentions
+          .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+          .map(normalizeWishlistItem)
+      : [],
+    checklist_items: Array.isArray(checklist)
+      ? checklist
+          .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+          .map(normalizeChecklistItem)
+      : [],
+    journal_entries: Array.isArray(journalRaw)
+      ? journalRaw
+          .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+          .map(normalizeJournalEntry)
+      : [],
     expenses: Array.isArray(expensesRaw)
       ? expensesRaw
           .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
@@ -388,6 +443,34 @@ export async function addChecklistItem(tripId: string, title: string) {
   await apiRequest(`/trips/${tripId}/checklist`, {
     method: 'POST',
     body: JSON.stringify({ title })
+  })
+}
+
+export async function addWishlistItem(tripId: string, title: string, notes?: string) {
+  await apiRequest(`/trips/${tripId}/intentions`, {
+    method: 'POST',
+    body: JSON.stringify({
+      source: 'wishlist',
+      title,
+      ...(notes ? { notes } : {})
+    })
+  })
+}
+
+export async function updateChecklistItem(tripId: string, itemId: string, isCompleted: boolean) {
+  await apiRequest(`/trips/${tripId}/checklist/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isCompleted })
+  })
+}
+
+export async function addJournalEntry(tripId: string, body: string, title?: string) {
+  await apiRequest(`/trips/${tripId}/journal`, {
+    method: 'POST',
+    body: JSON.stringify({
+      body,
+      ...(title ? { title } : {})
+    })
   })
 }
 

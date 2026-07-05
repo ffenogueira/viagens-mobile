@@ -36,7 +36,7 @@ import { ToolsScreen } from './screens/ToolsScreen'
 import { TripWorkspaceScreen } from './screens/TripWorkspaceScreen'
 import { UtilitiesScreen } from './screens/UtilitiesScreen'
 import { colors } from './theme'
-import type { NavigationTarget, OverlayScreen, Tab, Trip } from './types/trip'
+import type { NavigationTarget, OverlayScreen, Tab, Trip, TripHomeShortcut, TripToolsPanel } from './types/trip'
 
 function isTab(target: NavigationTarget): target is Tab {
   return (
@@ -70,6 +70,7 @@ function AppContent() {
   const [quickCreateOpen, setQuickCreateOpen] = useState(false)
   const [createTripOpen, setCreateTripOpen] = useState(false)
   const [focusTripId, setFocusTripId] = useState<string | null>(null)
+  const [workspaceToolsPanel, setWorkspaceToolsPanel] = useState<TripToolsPanel | null>(null)
 
   useEffect(() => {
     async function boot() {
@@ -261,9 +262,28 @@ function AppContent() {
     }
   }
 
-  function openTripWorkspace(trip: Trip) {
+  function openTripWorkspace(trip: Trip, shortcut?: TripHomeShortcut) {
     setSelectedTrip(trip)
     setOverlayReturn(null)
+
+    if (shortcut === 'group') {
+      setWorkspaceToolsPanel(null)
+      setOverlay('group-chat')
+      return
+    }
+
+    if (shortcut === 'budget') {
+      setWorkspaceToolsPanel(null)
+      setOverlay('expenses')
+      return
+    }
+
+    if (shortcut === 'wishlist' || shortcut === 'checklist' || shortcut === 'board') {
+      setWorkspaceToolsPanel(shortcut)
+    } else {
+      setWorkspaceToolsPanel(null)
+    }
+
     setOverlay('trip-workspace')
   }
 
@@ -281,6 +301,7 @@ function AppContent() {
   function closeOverlay() {
     setOverlay(null)
     setOverlayReturn(null)
+    setWorkspaceToolsPanel(null)
   }
 
   function backFromOverlay() {
@@ -349,6 +370,7 @@ function AppContent() {
         {overlay === 'trip-workspace' ? (
           <TripWorkspaceScreen
             trip={selectedTrip}
+            initialToolsPanel={workspaceToolsPanel}
             onBack={closeOverlay}
             onNavigate={navigateFromTripWorkspace}
             onTripUpdated={handleTripUpdated}

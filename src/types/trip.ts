@@ -68,6 +68,33 @@ export type TripDayPlan = {
   items: TripDayItem[]
 }
 
+export type TripWishlistItem = {
+  id: string
+  title: string
+  source: string
+  notes?: string | null
+  url?: string | null
+}
+
+export type TripChecklistItem = {
+  id: string
+  title: string
+  category?: string | null
+  isCompleted: boolean
+}
+
+export type TripJournalEntry = {
+  id: string
+  title?: string | null
+  body: string
+  createdAt: string
+  user?: TripUser
+}
+
+export type TripToolsPanel = 'wishlist' | 'checklist' | 'board'
+
+export type TripHomeShortcut = TripToolsPanel | 'group' | 'budget'
+
 export type Trip = {
   id: string
   title?: string
@@ -82,7 +109,9 @@ export type Trip = {
   end_date?: string
   base_currency?: string
   cover_image_url?: string
-  checklist_items?: unknown[]
+  wishlist_items?: TripWishlistItem[]
+  checklist_items?: TripChecklistItem[]
+  journal_entries?: TripJournalEntry[]
   expenses?: TripExpense[]
   photos?: unknown[]
   members?: TripMember[]

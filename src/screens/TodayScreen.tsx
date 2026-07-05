@@ -18,11 +18,12 @@ import {
   VStack
 } from '../../components/ui'
 import type { AuthUser } from '../api/client'
+import { fetchTrip } from '../api/client'
 import { UserAvatar } from '../components/UserAvatar'
 import { getTripCoverFallback } from '../lib/demoAssets'
 import { loadTripMedia } from '../storage/tripMedia'
 import { colors, shadow, shadowStrong } from '../theme'
-import type { NavigationTarget, Trip } from '../types/trip'
+import type { NavigationTarget, Trip, TripHomeShortcut } from '../types/trip'
 
 type TodayScreenProps = {
   user: AuthUser | null
@@ -33,7 +34,7 @@ type TodayScreenProps = {
   onOpenCreateTrip: () => void
   onNavigate: (target: NavigationTarget) => void
   onSelectTrip?: (trip: Trip) => void
-  onOpenTrip?: (trip: Trip) => void
+  onOpenTrip?: (trip: Trip, shortcut?: TripHomeShortcut) => void
 }
 
 type ActionCard = {
@@ -168,9 +169,11 @@ export function TodayScreen({
 }: TodayScreenProps) {
   const [segment, setSegment] = useState<TripSegment>('upcoming')
   const [coverOverride, setCoverOverride] = useState<string | null>(null)
+  const [tripDetails, setTripDetails] = useState<Trip | null>(null)
 
   const filteredTrips = useMemo(() => filterTripsBySegment(trips, segment), [trips, segment])
   const displayTrip = filteredTrips[0] ?? null
+  const cardTrip = tripDetails ?? displayTrip
 
   useEffect(() => {
     if (!focusTripId) return
@@ -179,6 +182,29 @@ export function TodayScreen({
     setSegment(classifyTripSegment(trip))
     onFocusTripHandled?.()
   }, [focusTripId, trips, onFocusTripHandled])
+
+  useEffect(() => {
+    if (!displayTrip?.id) {
+      setTripDetails(null)
+      return
+    }
+
+    let cancelled = false
+    void fetchTrip(displayTrip.id).then((full) => {
+      if (!cancelled) setTripDetails(full)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [displayTrip?.id])
+
+  useEffect(() => {
+    if (!displayTrip?.id) return
+    const updated = trips.find((item) => item.id === displayTrip.id)
+    if (!updated) return
+    setTripDetails((current) => (current?.id === updated.id ? { ...current, ...updated } : current))
+  }, [trips, displayTrip?.id])
 
   useEffect(() => {
     if (displayTrip) {
@@ -221,7 +247,7 @@ export function TodayScreen({
       ) : (
         <VStack>
           <TripHomeCard
-            trip={displayTrip}
+            trip={cardTrip}
             coverUri={
               coverOverride ??
               displayTrip.cover_image_url ??
@@ -229,6 +255,10 @@ export function TodayScreen({
             }
             daysUntil={daysUntil}
             onPress={() => onOpenTrip?.(displayTrip)}
+            onShortcut={(shortcut) => {
+              onSelectTrip?.(displayTrip)
+              onOpenTrip?.(displayTrip, shortcut)
+            }}
           />
 
           <TravelShortcutsGrid onNavigate={onNavigate} />
@@ -513,23 +543,32 @@ function TripHomeCard({
   trip,
   coverUri,
   daysUntil,
-  onPress
+  onPress,
+  onShortcut
 }: {
   trip: Trip
   coverUri: string
   daysUntil: number | null
   onPress: () => void
+  onShortcut?: (shortcut: TripHomeShortcut) => void
 }) {
   const fallbackCover = getTripCoverFallback(trip.destination)
   const [resolvedCover, setResolvedCover] = useState(coverUri || fallbackCover)
+  const wishlistCount = trip.wishlist_items?.length ?? 0
+  const checklistTotal = trip.checklist_items?.length ?? 0
+  const checklistDone = trip.checklist_items?.filter((item) => item.isCompleted).length ?? 0
+  const membersCount = Math.max(trip.members?.length ?? 1, 1)
+  const expenseTotal = (trip.expenses ?? []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  const budgetLabel =
+    expenseTotal > 0 ? `${Math.round(expenseTotal)} ${trip.base_currency || 'BRL'}` : trip.base_currency || 'BRL'
 
   useEffect(() => {
     setResolvedCover(coverUri || fallbackCover)
   }, [coverUri, fallbackCover])
 
   return (
-    <Pressable onPress={onPress}>
-      <Box className="overflow-hidden rounded-[34px] bg-white" style={shadowStrong}>
+    <Box className="overflow-hidden rounded-[34px] bg-white" style={shadowStrong}>
+      <Pressable onPress={onPress}>
         <ImageBackground
           source={{ uri: resolvedCover }}
           resizeMode="cover"
@@ -561,28 +600,49 @@ function TripHomeCard({
             </Text>
           </VStack>
         </ImageBackground>
+      </Pressable>
 
-        <HStack className="items-center justify-between px-4 py-4">
-          <Metric icon="star" label="Wishlist" value="0" color={colors.orange} />
-          <Box className="h-10 w-px bg-[#E5E7EB]" />
-          <Metric
-            icon="checkmark-circle"
-            label="Checklist"
-            value={`${trip.checklist_items?.length || 0}`}
-            color={colors.mint}
-          />
-          <Box className="h-10 w-px bg-[#E5E7EB]" />
-          <Metric icon="people" label="Grupo" value="1" color={colors.primary} />
-          <Box className="h-10 w-px bg-[#E5E7EB]" />
-          <Metric icon="wallet" label="Orçamento" value={trip.base_currency || 'BRL'} color={colors.sky} />
-        </HStack>
+      <HStack className="items-center justify-between px-4 py-4">
+        <Metric
+          icon="star"
+          label="Wishlist"
+          value={String(wishlistCount)}
+          color={colors.orange}
+          onPress={onShortcut ? () => onShortcut('wishlist') : undefined}
+        />
+        <Box className="h-10 w-px bg-[#E5E7EB]" />
+        <Metric
+          icon="checkmark-circle"
+          label="Checklist"
+          value={checklistTotal ? `${checklistDone}/${checklistTotal}` : '0'}
+          color={colors.mint}
+          onPress={onShortcut ? () => onShortcut('checklist') : undefined}
+        />
+        <Box className="h-10 w-px bg-[#E5E7EB]" />
+        <Metric
+          icon="people"
+          label="Grupo"
+          value={String(membersCount)}
+          color={colors.primary}
+          onPress={onShortcut ? () => onShortcut('group') : undefined}
+        />
+        <Box className="h-10 w-px bg-[#E5E7EB]" />
+        <Metric
+          icon="wallet"
+          label="Orçamento"
+          value={budgetLabel}
+          color={colors.sky}
+          onPress={onShortcut ? () => onShortcut('budget') : undefined}
+        />
+      </HStack>
 
+      <Pressable onPress={onPress}>
         <HStack className="items-center justify-center gap-1 border-t border-[#E5E7EB] px-5 py-3">
           <Text className="text-[12px] font-black text-primary">Abrir viagem</Text>
           <Ionicons color={colors.primary} name="chevron-forward" size={18} />
         </HStack>
-      </Box>
-    </Pressable>
+      </Pressable>
+    </Box>
   )
 }
 
@@ -590,14 +650,16 @@ function Metric({
   icon,
   label,
   value,
-  color
+  color,
+  onPress
 }: {
   icon: keyof typeof Ionicons.glyphMap
   label: string
   value: string
   color: string
+  onPress?: () => void
 }) {
-  return (
+  const content = (
     <VStack className="flex-1 items-center gap-1">
       <HStack className="items-center gap-1.5">
         <Ionicons color={color} name={icon} size={18} />
@@ -605,5 +667,13 @@ function Metric({
       </HStack>
       <Text className="text-[10px] font-black text-muted-foreground">{label}</Text>
     </VStack>
+  )
+
+  if (!onPress) return content
+
+  return (
+    <Pressable onPress={onPress} className="flex-1">
+      {content}
+    </Pressable>
   )
 }
