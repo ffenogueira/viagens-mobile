@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import type { DiscoveryDocument } from 'expo-auth-session'
 import { getAppleServiceId, getGoogleWebClientId, isAppleSignInConfigured, isGoogleSignInConfigured } from '../config/auth'
 import {
   SocialAuthCancelledError,
@@ -56,7 +57,7 @@ async function obtainGoogleCredential(): Promise<SocialCredential> {
     usePKCE: false
   })
 
-  const discovery: AuthSession.DiscoveryDocument = {
+  const discovery: DiscoveryDocument = {
     authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
     tokenEndpoint: 'https://oauth2.googleapis.com/token',
     revocationEndpoint: 'https://oauth2.googleapis.com/revoke'
@@ -154,7 +155,7 @@ async function obtainAppleCredentialOAuth(): Promise<SocialCredential> {
     extraParams: { response_mode: 'form_post' }
   })
 
-  const discovery: AuthSession.DiscoveryDocument = {
+  const discovery: DiscoveryDocument = {
     authorizationEndpoint: 'https://appleid.apple.com/auth/authorize',
     tokenEndpoint: 'https://appleid.apple.com/auth/token'
   }

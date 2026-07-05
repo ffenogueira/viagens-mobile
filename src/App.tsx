@@ -38,6 +38,16 @@ import { UtilitiesScreen } from './screens/UtilitiesScreen'
 import { colors } from './theme'
 import type { NavigationTarget, OverlayScreen, Tab, Trip } from './types/trip'
 
+function isTab(target: NavigationTarget): target is Tab {
+  return (
+    target === 'today' ||
+    target === 'utilities' ||
+    target === 'tools' ||
+    target === 'memories' ||
+    target === 'profile'
+  )
+}
+
 type AppSession = 'loading' | 'guest' | 'authenticated'
 
 function AppContent() {
@@ -219,7 +229,9 @@ function AppContent() {
     }
 
     setToolsInitialMode('fefai')
-    setTab(target)
+    if (isTab(target)) {
+      setTab(target)
+    }
   }
 
   function navigateFromTripWorkspace(target: NavigationTarget) {
@@ -244,7 +256,9 @@ function AppContent() {
     }
 
     setToolsInitialMode('fefai')
-    setTab(target)
+    if (isTab(target)) {
+      setTab(target)
+    }
   }
 
   function openTripWorkspace(trip: Trip) {
