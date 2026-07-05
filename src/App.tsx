@@ -1,7 +1,8 @@
+import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, StatusBar } from 'react-native'
+import { ActivityIndicator, Alert, Modal, StatusBar } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import { Box, GluestackUIProvider } from '../components/ui'
+import { Box, GluestackUIProvider, HStack, Pressable, Text, VStack } from '../components/ui'
 import {
   AuthUser,
   clearToken,
@@ -14,18 +15,28 @@ import {
 } from './api/client'
 import {
   obtainSocialCredential,
+  SocialAuthCancelledError,
+  SocialAuthNativeModuleError,
   SocialAuthNotConfiguredError,
   type SocialProvider
 } from './auth/social'
+import { CreateTripSheet, type CreateTripInput } from './components/CreateTripSheet'
 import { FloatingTabBar } from './components/FloatingTabBar'
+import { QuickCreateMenu } from './components/QuickCreateMenu'
 import { ScreenHeader } from './components/ScreenHeader'
 import { GuestScreen } from './screens/GuestScreen'
 import { MemoriesScreen } from './screens/MemoriesScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
+import { BillSplitScreen } from './screens/BillSplitScreen'
+import { ExpensesScreen } from './screens/ExpensesScreen'
+import { GroupChatScreen } from './screens/GroupChatScreen'
+import { WeatherScreen } from './screens/WeatherScreen'
 import { TodayScreen } from './screens/TodayScreen'
 import { ToolsScreen } from './screens/ToolsScreen'
+import { TripWorkspaceScreen } from './screens/TripWorkspaceScreen'
+import { UtilitiesScreen } from './screens/UtilitiesScreen'
 import { colors } from './theme'
-import type { Tab, Trip } from './types/trip'
+import type { NavigationTarget, OverlayScreen, Tab, Trip } from './types/trip'
 
 type AppSession = 'loading' | 'guest' | 'authenticated'
 
@@ -40,8 +51,15 @@ function AppContent() {
   const [socialLoading, setSocialLoading] = useState(false)
   const [socialProvider, setSocialProvider] = useState<SocialProvider | null>(null)
   const [tab, setTab] = useState<Tab>('today')
+  const [overlay, setOverlay] = useState<OverlayScreen | null>(null)
+  const [overlayReturn, setOverlayReturn] = useState<OverlayScreen | null>(null)
+  const [toolsInitialMode, setToolsInitialMode] = useState<'fefai' | 'camera' | 'checkin'>('fefai')
   const [trips, setTrips] = useState<Trip[]>([])
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null)
+  const [notificationSheetOpen, setNotificationSheetOpen] = useState(false)
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
+  const [createTripOpen, setCreateTripOpen] = useState(false)
+  const [focusTripId, setFocusTripId] = useState<string | null>(null)
 
   useEffect(() => {
     async function boot() {
@@ -134,10 +152,14 @@ function AppContent() {
       }
       setSession('authenticated')
     } catch (error) {
-      if (error instanceof SocialAuthNotConfiguredError) {
+      if (error instanceof SocialAuthCancelledError) {
+        return
+      }
+
+      if (error instanceof SocialAuthNotConfiguredError || error instanceof SocialAuthNativeModuleError) {
         Alert.alert(
-          'Login social em breve',
-          'Google, Facebook e Apple já estão no layout. Assim que a API e o OAuth forem ativados, o acesso funcionará aqui.'
+          error instanceof SocialAuthNativeModuleError ? 'Atualize o app' : 'Login social em configuração',
+          error.message
         )
         return
       }
@@ -160,17 +182,100 @@ function AppContent() {
     setSession('guest')
   }
 
-  async function handleCreateTrip() {
+  async function handleCreateTrip(input: CreateTripInput) {
     setLoading(true)
     try {
-      const trip = await createTrip()
+      const trip = await createTrip(input)
       await loadTrips()
       setSelectedTrip(trip)
+      setFocusTripId(trip.id)
+      setTab('today')
     } catch (error) {
       Alert.alert('Viagem não criada', error instanceof Error ? error.message : 'Tente novamente.')
     } finally {
       setLoading(false)
     }
+  }
+
+  function navigate(target: NavigationTarget) {
+    if (
+      target === 'weather' ||
+      target === 'expenses' ||
+      target === 'bill-split' ||
+      target === 'group-chat'
+    ) {
+      setOverlayReturn(null)
+      setOverlay(target)
+      return
+    }
+
+    setOverlay(null)
+    setOverlayReturn(null)
+
+    if (target === 'tools-camera') {
+      setToolsInitialMode('camera')
+      setTab('tools')
+      return
+    }
+
+    setToolsInitialMode('fefai')
+    setTab(target)
+  }
+
+  function navigateFromTripWorkspace(target: NavigationTarget) {
+    setOverlayReturn('trip-workspace')
+
+    if (
+      target === 'weather' ||
+      target === 'expenses' ||
+      target === 'bill-split' ||
+      target === 'group-chat'
+    ) {
+      setOverlay(target)
+      return
+    }
+
+    setOverlay(null)
+
+    if (target === 'tools-camera') {
+      setToolsInitialMode('camera')
+      setTab('tools')
+      return
+    }
+
+    setToolsInitialMode('fefai')
+    setTab(target)
+  }
+
+  function openTripWorkspace(trip: Trip) {
+    setSelectedTrip(trip)
+    setOverlayReturn(null)
+    setOverlay('trip-workspace')
+  }
+
+  function handleTripUpdated(trip: Trip) {
+    setSelectedTrip(trip)
+    setTrips((current) => current.map((entry) => (entry.id === trip.id ? { ...entry, ...trip } : entry)))
+  }
+
+  function handleTripDeleted(tripId: string) {
+    setTrips((current) => current.filter((entry) => entry.id !== tripId))
+    setSelectedTrip((current) => (current?.id === tripId ? null : current))
+    closeOverlay()
+  }
+
+  function closeOverlay() {
+    setOverlay(null)
+    setOverlayReturn(null)
+  }
+
+  function backFromOverlay() {
+    if (overlayReturn) {
+      setOverlay(overlayReturn)
+      setOverlayReturn(null)
+      return
+    }
+    closeOverlay()
   }
 
   if (session === 'loading') {
@@ -208,35 +313,173 @@ function AppContent() {
     ? `${selectedTrip.destination}${selectedTrip.country ? `, ${selectedTrip.country}` : ''}`
     : undefined
 
-  return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <ScreenHeader
-        user={user}
-        destination={destination}
-        onLogout={tab === 'profile' ? undefined : () => setTab('profile')}
-        showNotification={tab !== 'profile'}
-      />
+  const immersiveOverlay = overlay === 'trip-workspace'
 
-      <Box className="flex-1 pb-[88px]">
-        {tab === 'today' && (
-          <TodayScreen
-            selectedTrip={selectedTrip}
-            trips={trips}
-            loading={loading}
-            onCreateTrip={handleCreateTrip}
-            onNavigate={setTab}
+  return (
+    <SafeAreaView
+      className="flex-1 bg-background"
+      edges={immersiveOverlay ? ['left', 'right'] : ['top', 'left', 'right']}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      {!immersiveOverlay ? (
+        <ScreenHeader
+          user={user}
+          destination={tab === 'today' ? undefined : destination}
+          onLogout={tab === 'profile' ? undefined : () => setTab('profile')}
+          onNotificationPress={() => setNotificationSheetOpen(true)}
+          showNotification={tab !== 'profile'}
+        />
+      ) : null}
+
+      <Box className="flex-1 pb-[104px]">
+        {overlay === 'trip-workspace' ? (
+          <TripWorkspaceScreen
+            trip={selectedTrip}
+            onBack={closeOverlay}
+            onNavigate={navigateFromTripWorkspace}
+            onTripUpdated={handleTripUpdated}
+            onTripDeleted={handleTripDeleted}
           />
-        )}
-        {tab === 'tools' && <ToolsScreen selectedTrip={selectedTrip} />}
-        {tab === 'memories' && <MemoriesScreen selectedTrip={selectedTrip} />}
-        {tab === 'profile' && (
-          <ProfileScreen user={user} tripCount={trips.length} onLogout={logout} />
+        ) : overlay === 'weather' ? (
+          <WeatherScreen selectedTrip={selectedTrip} onBack={closeOverlay} />
+        ) : overlay === 'expenses' ? (
+          <ExpensesScreen
+            selectedTrip={selectedTrip}
+            onBack={closeOverlay}
+            onOpenBillSplit={() => {
+              setOverlayReturn('expenses')
+              setOverlay('bill-split')
+            }}
+          />
+        ) : overlay === 'bill-split' ? (
+          <BillSplitScreen selectedTrip={selectedTrip} onBack={backFromOverlay} />
+        ) : overlay === 'group-chat' ? (
+          <GroupChatScreen selectedTrip={selectedTrip} onBack={closeOverlay} />
+        ) : (
+          <>
+            {tab === 'today' && (
+              <TodayScreen
+                user={user}
+                trips={trips}
+                loading={loading}
+                focusTripId={focusTripId}
+                onFocusTripHandled={() => setFocusTripId(null)}
+                onOpenCreateTrip={() => setCreateTripOpen(true)}
+                onNavigate={navigate}
+                onSelectTrip={setSelectedTrip}
+                onOpenTrip={openTripWorkspace}
+              />
+            )}
+            {tab === 'utilities' && <UtilitiesScreen />}
+            {tab === 'tools' && (
+              <ToolsScreen selectedTrip={selectedTrip} initialMode={toolsInitialMode} />
+            )}
+            {tab === 'memories' && <MemoriesScreen selectedTrip={selectedTrip} />}
+            {tab === 'profile' && (
+              <ProfileScreen user={user} tripCount={trips.length} onLogout={logout} />
+            )}
+          </>
         )}
       </Box>
 
-      <FloatingTabBar active={tab} onChange={setTab} />
+      <FloatingTabBar
+        active={tab}
+        onChange={setTab}
+        onCreatePress={() => setQuickCreateOpen(true)}
+      />
+      <QuickCreateMenu
+        visible={quickCreateOpen}
+        onClose={() => setQuickCreateOpen(false)}
+        onCreateTrip={() => setCreateTripOpen(true)}
+        onNavigate={navigate}
+        onSetTab={setTab}
+      />
+      <CreateTripSheet
+        visible={createTripOpen}
+        loading={loading}
+        firstName={user?.name?.split(' ')[0] || 'viajante'}
+        onClose={() => setCreateTripOpen(false)}
+        onSubmit={(input) => {
+          setCreateTripOpen(false)
+          void handleCreateTrip(input)
+        }}
+      />
+      <NotificationSheet
+        visible={notificationSheetOpen}
+        onClose={() => setNotificationSheetOpen(false)}
+      />
     </SafeAreaView>
+  )
+}
+
+function NotificationSheet({
+  visible,
+  onClose
+}: {
+  visible: boolean
+  onClose: () => void
+}) {
+  const items = [
+    {
+      icon: 'airplane-outline' as const,
+      title: 'Convites de viagem',
+      desc: 'Saiba na hora quando alguém te chamar para planejar junto.'
+    },
+    {
+      icon: 'checkmark-done-outline' as const,
+      title: 'Tarefas e reservas',
+      desc: 'Passaporte, seguro, hospedagem e pendências sem se perder.'
+    },
+    {
+      icon: 'location-outline' as const,
+      title: 'Check-ins do grupo',
+      desc: 'Atualizações importantes durante a viagem, com consentimento.'
+    }
+  ]
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <Box className="flex-1 justify-end bg-black/35">
+        <Box className="rounded-t-[38px] bg-white px-6 pb-9 pt-3">
+          <Box className="mb-6 h-1.5 w-16 self-center rounded-full bg-[#D1D5DB]" />
+          <Box className="mb-5 h-[86px] w-[86px] items-center justify-center self-center rounded-[30px] bg-viagens-lilac">
+            <Ionicons color={colors.primary} name="notifications" size={42} />
+          </Box>
+          <Text className="text-center text-[28px] font-black text-foreground">
+            Fique por dentro da viagem
+          </Text>
+          <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
+            Notificações para o que importa: convite, tarefa, roteiro, check-in e mudança de plano.
+          </Text>
+
+          <VStack className="mt-6 rounded-[28px] bg-[#F8FAFC] p-4">
+            {items.map((item) => (
+              <HStack key={item.title} className="items-center gap-3 py-3">
+                <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-viagens-lilac">
+                  <Ionicons color={colors.primary} name={item.icon} size={21} />
+                </Box>
+                <VStack className="flex-1">
+                  <Text className="text-[15px] font-black text-foreground">{item.title}</Text>
+                  <Text className="mt-0.5 text-[12px] font-semibold leading-5 text-muted-foreground">
+                    {item.desc}
+                  </Text>
+                </VStack>
+              </HStack>
+            ))}
+          </VStack>
+
+          <Pressable
+            onPress={onClose}
+            className="mt-6 h-14 items-center justify-center rounded-full bg-primary"
+          >
+            <Text className="text-[16px] font-black text-white">Entendi</Text>
+          </Pressable>
+          <Pressable onPress={onClose} className="mt-4 items-center">
+            <Text className="text-[14px] font-bold text-muted-foreground">Depois eu vejo</Text>
+          </Pressable>
+        </Box>
+      </Box>
+    </Modal>
   )
 }
 

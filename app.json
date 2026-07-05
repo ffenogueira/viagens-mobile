@@ -9,9 +9,14 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "plugins": [
+      "expo-web-browser",
+      "expo-apple-authentication"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "br.com.upyouridea.viagens"
+      "bundleIdentifier": "br.com.upyouridea.viagens",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "br.com.upyouridea.viagens.preview",
@@ -28,7 +33,11 @@
       "versionCode": 5
     },
     "extra": {
-      "apiUrl": "https://api-viagens.upyouridea.com.br/v1"
+      "apiUrl": "https://api-viagens.upyouridea.com.br/v1",
+      "googleWebClientId": "",
+      "googleAndroidClientId": "",
+      "googleIosClientId": "",
+      "appleServiceId": ""
     }
   }
 }

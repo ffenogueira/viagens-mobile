@@ -54,6 +54,11 @@ echo "→ Aplicando patches locais Android..."
 [[ -f "$ROOT_DIR/scripts/patch-android-node.sh" ]] && bash "$ROOT_DIR/scripts/patch-android-node.sh"
 [[ -f "$ROOT_DIR/scripts/patch-expo-path-spaces.sh" ]] && bash "$ROOT_DIR/scripts/patch-expo-path-spaces.sh"
 
+GRADLE_WRAPPER="$ROOT_DIR/android/gradle/wrapper/gradle-wrapper.properties"
+if [[ -f "$GRADLE_WRAPPER" ]]; then
+  sed -i '' 's|gradle-9\.[0-9.]*-bin\.zip|gradle-8.14.3-bin.zip|g' "$GRADLE_WRAPPER"
+fi
+
 echo ""
 echo "→ Parando Gradle daemons antigos..."
 (

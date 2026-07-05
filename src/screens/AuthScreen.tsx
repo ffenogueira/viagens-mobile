@@ -75,9 +75,9 @@ function AuthField({
 
 function OrDivider() {
   return (
-    <HStack className="my-4 items-center gap-3">
+    <HStack className="my-5 items-center gap-3">
       <Box className="h-px flex-1 bg-[#E5E7EB]" />
-      <Text className="text-[12px] font-black text-[#9CA3AF]">OU</Text>
+      <Text className="text-[13px] font-medium lowercase text-[#9CA3AF]">ou</Text>
       <Box className="h-px flex-1 bg-[#E5E7EB]" />
     </HStack>
   )

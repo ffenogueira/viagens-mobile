@@ -1,24 +1,19 @@
 import { Platform } from 'react-native'
+import { getAppleServiceId, getGoogleWebClientId, isAppleSignInConfigured, isGoogleSignInConfigured } from '../config/auth'
+import {
+  SocialAuthCancelledError,
+  SocialAuthNativeModuleError,
+  SocialAuthNotConfiguredError,
+  type SocialCredential,
+  type SocialProvider
+} from './social.types'
 
-export type SocialProvider = 'google' | 'apple' | 'facebook'
-
-export type SocialCredential = {
-  provider: SocialProvider
-  idToken: string
-}
-
-const providerLabels: Record<SocialProvider, string> = {
-  google: 'Google',
-  apple: 'Apple',
-  facebook: 'Facebook'
-}
-
-export class SocialAuthNotConfiguredError extends Error {
-  constructor(provider: SocialProvider) {
-    super(`Login com ${providerLabels[provider]} ainda não está configurado no app.`)
-    this.name = 'SocialAuthNotConfiguredError'
-  }
-}
+export type { SocialCredential, SocialProvider } from './social.types'
+export {
+  SocialAuthCancelledError,
+  SocialAuthNativeModuleError,
+  SocialAuthNotConfiguredError
+} from './social.types'
 
 export async function obtainSocialCredential(provider: SocialProvider): Promise<SocialCredential> {
   switch (provider) {
@@ -26,23 +21,158 @@ export async function obtainSocialCredential(provider: SocialProvider): Promise<
       return obtainGoogleCredential()
     case 'apple':
       return obtainAppleCredential()
-    case 'facebook':
-      return obtainFacebookCredential()
   }
 }
 
 async function obtainGoogleCredential(): Promise<SocialCredential> {
-  throw new SocialAuthNotConfiguredError('google')
+  if (!isGoogleSignInConfigured()) {
+    throw new SocialAuthNotConfiguredError('google')
+  }
+
+  let AuthSession: typeof import('expo-auth-session')
+  let WebBrowser: typeof import('expo-web-browser')
+
+  try {
+    AuthSession = await import('expo-auth-session')
+    WebBrowser = await import('expo-web-browser')
+  } catch {
+    throw new SocialAuthNativeModuleError('google')
+  }
+
+  try {
+    WebBrowser.maybeCompleteAuthSession()
+  } catch {
+    throw new SocialAuthNativeModuleError('google')
+  }
+
+  const clientId = getGoogleWebClientId()!
+  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'viagens-preview' })
+
+  const request = new AuthSession.AuthRequest({
+    clientId,
+    scopes: ['openid', 'profile', 'email'],
+    redirectUri,
+    responseType: AuthSession.ResponseType.IdToken,
+    usePKCE: false
+  })
+
+  const discovery: AuthSession.DiscoveryDocument = {
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    revocationEndpoint: 'https://oauth2.googleapis.com/revoke'
+  }
+
+  const result = await request.promptAsync(discovery)
+
+  if (result.type === 'cancel' || result.type === 'dismiss') {
+    throw new SocialAuthCancelledError('google')
+  }
+
+  if (result.type !== 'success') {
+    throw new Error('Login com Google não concluído.')
+  }
+
+  const idToken = result.params.id_token
+  if (!idToken) {
+    throw new Error('Não recebemos o token do Google. Tente novamente.')
+  }
+
+  return { provider: 'google', idToken }
 }
 
 async function obtainAppleCredential(): Promise<SocialCredential> {
-  if (Platform.OS !== 'ios') {
-    throw new Error('Login com Apple disponível apenas no iOS.')
+  if (Platform.OS === 'ios') {
+    return obtainAppleCredentialNative()
   }
-
-  throw new SocialAuthNotConfiguredError('apple')
+  return obtainAppleCredentialOAuth()
 }
 
-async function obtainFacebookCredential(): Promise<SocialCredential> {
-  throw new SocialAuthNotConfiguredError('facebook')
+async function obtainAppleCredentialNative(): Promise<SocialCredential> {
+  let AppleAuthentication: typeof import('expo-apple-authentication')
+  try {
+    AppleAuthentication = await import('expo-apple-authentication')
+  } catch {
+    throw new SocialAuthNativeModuleError('apple')
+  }
+
+  const available = await AppleAuthentication.isAvailableAsync()
+  if (!available) {
+    throw new SocialAuthNotConfiguredError('apple')
+  }
+
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL
+      ]
+    })
+
+    if (!credential.identityToken) {
+      throw new Error('Token da Apple não recebido.')
+    }
+
+    return { provider: 'apple', idToken: credential.identityToken }
+  } catch (error) {
+    if ((error as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
+      throw new SocialAuthCancelledError('apple')
+    }
+    throw error instanceof Error ? error : new Error('Falha ao entrar com Apple.')
+  }
+}
+
+async function obtainAppleCredentialOAuth(): Promise<SocialCredential> {
+  if (!isAppleSignInConfigured()) {
+    throw new SocialAuthNotConfiguredError('apple')
+  }
+
+  let AuthSession: typeof import('expo-auth-session')
+  let WebBrowser: typeof import('expo-web-browser')
+
+  try {
+    AuthSession = await import('expo-auth-session')
+    WebBrowser = await import('expo-web-browser')
+  } catch {
+    throw new SocialAuthNativeModuleError('apple')
+  }
+
+  try {
+    WebBrowser.maybeCompleteAuthSession()
+  } catch {
+    throw new SocialAuthNativeModuleError('apple')
+  }
+
+  const clientId = getAppleServiceId()!
+  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'viagens-preview' })
+
+  const request = new AuthSession.AuthRequest({
+    clientId,
+    redirectUri,
+    scopes: ['name', 'email'],
+    responseType: AuthSession.ResponseType.IdToken,
+    usePKCE: true,
+    extraParams: { response_mode: 'form_post' }
+  })
+
+  const discovery: AuthSession.DiscoveryDocument = {
+    authorizationEndpoint: 'https://appleid.apple.com/auth/authorize',
+    tokenEndpoint: 'https://appleid.apple.com/auth/token'
+  }
+
+  const result = await request.promptAsync(discovery)
+
+  if (result.type === 'cancel' || result.type === 'dismiss') {
+    throw new SocialAuthCancelledError('apple')
+  }
+
+  if (result.type !== 'success') {
+    throw new Error('Login com Apple não concluído.')
+  }
+
+  const idToken = result.params.id_token
+  if (!idToken) {
+    throw new Error('Não recebemos o token da Apple. Tente novamente.')
+  }
+
+  return { provider: 'apple', idToken }
 }

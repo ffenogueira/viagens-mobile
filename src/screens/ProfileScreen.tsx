@@ -3,8 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient'
 import React from 'react'
 import { ScrollView } from 'react-native'
 import {
-  Avatar,
-  AvatarFallbackText,
   Box,
   Button,
   ButtonText,
@@ -14,7 +12,7 @@ import {
   VStack
 } from '../../components/ui'
 import type { AuthUser } from '../api/client'
-import { getInitials } from '../components/shared'
+import { UserAvatar } from '../components/UserAvatar'
 import { colors, gradients } from '../theme'
 
 type ProfileScreenProps = {
@@ -34,11 +32,11 @@ export function ProfileScreen({ user, tripCount, onLogout }: ProfileScreenProps)
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
       <Box className="mb-6 overflow-hidden rounded-3xl shadow-soft-3">
         <LinearGradient colors={[...gradients.hero]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 24, alignItems: 'center' }}>
-          <Avatar className="mb-4 h-[88px] w-[88px] border-[3px] border-white/50 bg-white/20">
-            <AvatarFallbackText className="text-3xl font-black text-white">
-              {getInitials(user?.name)}
-            </AvatarFallbackText>
-          </Avatar>
+          <UserAvatar
+            name={user?.name}
+            className="mb-4 h-[88px] w-[88px] border-[3px] border-white/50 bg-white/20"
+            fallbackClassName="text-3xl font-black text-white"
+          />
 
           <Text className="text-2xl font-black text-white">{user?.name || 'Viajante'}</Text>
           <Text className="mt-1 text-sm font-semibold text-white/80">

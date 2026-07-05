@@ -13,8 +13,8 @@ if [[ ! -x "$EMULATOR" ]]; then
 fi
 
 if "$EMULATOR" -list-avds | grep -qx "$AVD"; then
-  echo "→ Iniciando emulador: $AVD"
-  exec "$EMULATOR" -avd "$AVD"
+  echo "→ Iniciando emulador: $AVD (DNS 8.8.8.8)"
+  exec "$EMULATOR" -avd "$AVD" -dns-server 8.8.8.8,8.8.4.4
 fi
 
 FIRST_AVD="$("$EMULATOR" -list-avds | head -n 1)"
@@ -23,5 +23,5 @@ if [[ -z "$FIRST_AVD" ]]; then
   exit 1
 fi
 
-echo "→ AVD '$AVD' não existe. Usando: $FIRST_AVD"
-exec "$EMULATOR" -avd "$FIRST_AVD"
+echo "→ AVD '$AVD' não existe. Usando: $FIRST_AVD (DNS 8.8.8.8)"
+exec "$EMULATOR" -avd "$FIRST_AVD" -dns-server 8.8.8.8,8.8.4.4

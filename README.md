@@ -29,6 +29,47 @@ npm run android:emulator   # inicia emulador (AVD padrão: Pixel)
 npm run android            # compila e instala no emulador
 ```
 
+## Login rápido (Gmail / Apple)
+
+O app suporta **Google (Gmail)** no Android e iOS, e **Apple** no iPhone.
+
+### 1. Google Cloud Console
+
+1. Crie um projeto em [Google Cloud Console](https://console.cloud.google.com/).
+2. Ative **Google Sign-In** / OAuth consent screen.
+3. Crie credenciais:
+   - **Android** — package `br.com.upyouridea.viagens.preview` + SHA-1 do keystore debug/release.
+   - **Web** — copie o **Client ID Web** (obrigatório no app).
+   - **iOS** — bundle `br.com.upyouridea.viagens` (quando publicar no iPhone).
+
+### 2. App mobile
+
+Crie `.env.local` (ou preencha `app.json` → `extra.googleWebClientId`):
+
+```bash
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=SEU_CLIENT_ID_WEB.apps.googleusercontent.com
+```
+
+Depois **rebuild nativo** (módulo Google Sign-In):
+
+```bash
+npm run prebuild:android
+npm run android
+```
+
+### 3. API (backend)
+
+No VPS / `.env` da API:
+
+```bash
+GOOGLE_CLIENT_IDS=WEB_CLIENT_ID,ANDROID_CLIENT_ID,IOS_CLIENT_ID
+APPLE_CLIENT_ID=br.com.upyouridea.viagens
+```
+
+Rode a migration social auth e reinicie a API.
+
+Endpoints: `POST /v1/auth/google` e `POST /v1/auth/apple` com `{ "idToken": "..." }`.
+
 Abrir o projeto nativo no Android Studio:
 
 ```bash
