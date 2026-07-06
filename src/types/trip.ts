@@ -95,6 +95,18 @@ export type TripToolsPanel = 'wishlist' | 'checklist' | 'board'
 
 export type TripHomeShortcut = TripToolsPanel | 'group' | 'budget'
 
+export type TripInviteRole = 'VIEWER' | 'MEMBER' | 'ORGANIZER'
+
+export type InvitePermissionLevel = 'viewer' | 'editor' | 'admin'
+
+export type TripInvitePreview = {
+  destination: string
+  country?: string | null
+  role: TripInviteRole
+  hostName?: string | null
+  expiresAt?: string | null
+}
+
 export type Trip = {
   id: string
   title?: string

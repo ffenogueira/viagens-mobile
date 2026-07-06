@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, Modal, StatusBar } from 'react-native'
+import { ActivityIndicator, Alert, Linking, Modal, StatusBar } from 'react-native'
+import * as SecureStore from 'expo-secure-store'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { Box, GluestackUIProvider, HStack, Pressable, Text, VStack } from '../components/ui'
 import {
@@ -21,6 +22,7 @@ import {
   type SocialProvider
 } from './auth/social'
 import { CreateTripSheet, type CreateTripInput } from './components/CreateTripSheet'
+import { InviteAcceptModal } from './components/InviteAcceptModal'
 import { FloatingTabBar } from './components/FloatingTabBar'
 import { QuickCreateMenu } from './components/QuickCreateMenu'
 import { ScreenHeader } from './components/ScreenHeader'
@@ -36,7 +38,10 @@ import { ToolsScreen } from './screens/ToolsScreen'
 import { TripWorkspaceScreen } from './screens/TripWorkspaceScreen'
 import { UtilitiesScreen } from './screens/UtilitiesScreen'
 import { colors } from './theme'
+import { parseInviteTokenFromUrl } from './lib/tripInvite'
 import type { NavigationTarget, OverlayScreen, Tab, Trip, TripHomeShortcut, TripToolsPanel } from './types/trip'
+
+const PENDING_INVITE_KEY = 'viagens_pending_invite'
 
 function isTab(target: NavigationTarget): target is Tab {
   return (
@@ -71,9 +76,57 @@ function AppContent() {
   const [createTripOpen, setCreateTripOpen] = useState(false)
   const [focusTripId, setFocusTripId] = useState<string | null>(null)
   const [workspaceToolsPanel, setWorkspaceToolsPanel] = useState<TripToolsPanel | null>(null)
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [inviteModalOpen, setInviteModalOpen] = useState(false)
+
+  async function persistInviteToken(token: string) {
+    await SecureStore.setItemAsync(PENDING_INVITE_KEY, token)
+    setInviteToken(token)
+  }
+
+  async function clearInviteToken() {
+    await SecureStore.deleteItemAsync(PENDING_INVITE_KEY)
+    setInviteToken(null)
+  }
+
+  function openInviteModal(token: string) {
+    setInviteToken(token)
+    setInviteModalOpen(true)
+  }
+
+  async function rememberInviteFromUrl(url: string | null) {
+    const token = parseInviteTokenFromUrl(url)
+    if (!token) return
+    await persistInviteToken(token)
+  }
+
+  async function resumePendingInvite() {
+    const stored = inviteToken ?? (await SecureStore.getItemAsync(PENDING_INVITE_KEY))
+    if (stored) {
+      openInviteModal(stored)
+    }
+  }
+
+  async function handleInviteAccepted(tripId: string) {
+    await clearInviteToken()
+    setInviteModalOpen(false)
+    const fresh = await fetchTrips()
+    setTrips(fresh)
+    const trip = fresh.find((item) => item.id === tripId) ?? null
+    if (trip) {
+      setSelectedTrip(trip)
+      openTripWorkspace(trip)
+      return
+    }
+    setFocusTripId(tripId)
+    setTab('today')
+  }
 
   useEffect(() => {
     async function boot() {
+      const initialUrl = await Linking.getInitialURL()
+      await rememberInviteFromUrl(initialUrl)
+
       const restored = await restoreSession()
       if (!restored) {
         setSession('guest')
@@ -83,10 +136,24 @@ function AppContent() {
       setUser(restored.user)
       await loadTrips()
       setSession('authenticated')
+      await resumePendingInvite()
     }
 
     boot()
   }, [])
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void (async () => {
+        await rememberInviteFromUrl(url)
+        if (session === 'authenticated') {
+          await resumePendingInvite()
+        }
+      })()
+    })
+
+    return () => subscription.remove()
+  }, [session, inviteToken])
 
   async function loadTrips() {
     try {
@@ -136,6 +203,7 @@ function AppContent() {
         setSelectedTrip(null)
       }
       setSession('authenticated')
+      await resumePendingInvite()
     } catch (error) {
       Alert.alert('Acesso não concluído', error instanceof Error ? error.message : 'Confira seus dados e tente novamente.')
     } finally {
@@ -162,6 +230,7 @@ function AppContent() {
         setSelectedTrip(null)
       }
       setSession('authenticated')
+      await resumePendingInvite()
     } catch (error) {
       if (error instanceof SocialAuthCancelledError) {
         return
@@ -335,6 +404,7 @@ function AppContent() {
           loading={loading}
           socialLoading={socialLoading}
           socialProvider={socialProvider}
+          invitePending={Boolean(inviteToken)}
           onModeChange={setMode}
           onNameChange={setName}
           onEmailChange={setEmail}
@@ -392,7 +462,7 @@ function AppContent() {
         ) : overlay === 'bill-split' ? (
           <BillSplitScreen selectedTrip={selectedTrip} onBack={backFromOverlay} />
         ) : overlay === 'group-chat' ? (
-          <GroupChatScreen selectedTrip={selectedTrip} onBack={backFromOverlay} />
+          <GroupChatScreen selectedTrip={selectedTrip} user={user} onBack={backFromOverlay} />
         ) : (
           <>
             {tab === 'today' && (
@@ -446,6 +516,19 @@ function AppContent() {
         visible={notificationSheetOpen}
         onClose={() => setNotificationSheetOpen(false)}
       />
+      {session === 'authenticated' ? (
+        <InviteAcceptModal
+          visible={inviteModalOpen}
+          token={inviteToken}
+          onClose={async () => {
+            setInviteModalOpen(false)
+            await clearInviteToken()
+          }}
+          onAccepted={(tripId) => {
+            void handleInviteAccepted(tripId)
+          }}
+        />
+      ) : null}
     </SafeAreaView>
   )
 }

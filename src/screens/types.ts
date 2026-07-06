@@ -8,6 +8,7 @@ export type AuthScreenProps = {
   loading: boolean
   socialLoading?: boolean
   socialProvider?: SocialProvider | null
+  invitePending?: boolean
   onModeChange: (mode: 'login' | 'register') => void
   onNameChange: (value: string) => void
   onEmailChange: (value: string) => void

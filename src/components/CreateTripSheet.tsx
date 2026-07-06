@@ -19,6 +19,7 @@ import { colors } from '../theme'
 export type CreateTripInput = {
   destinationName?: string
   country?: string
+  countryCode?: string
   title?: string
   description?: string
   startsAt?: string
@@ -94,6 +95,7 @@ export function CreateTripSheet({
     onSubmit({
       destinationName: cleanDestination,
       country: (selectedPlace?.country ?? country.trim()) || undefined,
+      countryCode: selectedPlace?.countryCode || undefined,
       title: `Viagem para ${cleanDestination}`,
       description: description.trim(),
       startsAt,

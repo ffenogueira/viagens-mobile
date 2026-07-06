@@ -21,6 +21,20 @@
     "android": {
       "package": "br.com.upyouridea.viagens.preview",
       "softwareKeyboardLayoutMode": "resize",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "viagens.upyouridea.com.br",
+              "pathPrefix": "/app"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#7B4DFF"
       },
@@ -30,7 +44,7 @@
         "ACCESS_COARSE_LOCATION",
         "READ_MEDIA_IMAGES"
       ],
-      "versionCode": 5
+      "versionCode": 6
     },
     "extra": {
       "apiUrl": "https://api-viagens.upyouridea.com.br/v1",

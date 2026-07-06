@@ -8,7 +8,6 @@ import {
   ImageBackground,
   Modal,
   ScrollView,
-  Share,
   StyleSheet,
   TextInput,
   View
@@ -23,7 +22,6 @@ import {
 } from '../../components/ui'
 import {
   addTripItineraryItem,
-  createTripInvite,
   fetchTrip,
   deleteTrip,
   requestActivitySuggestions,
@@ -41,6 +39,7 @@ import { TripMapCanvas } from '../components/TripMapCanvas'
 import { TripMapView } from '../components/TripMapView'
 import { TripDeleteConfirmModal } from '../components/TripDeleteConfirmModal'
 import { TripOptionsMenu } from '../components/TripOptionsMenu'
+import { TripInviteSheet } from '../components/TripInviteSheet'
 import { formatDateInput, toIsoDateStart } from '../lib/dates'
 import type { LeafletMapMarker } from '../lib/buildLeafletMapHtml'
 import { filterMarkersForDay, resolveTripMapMarkers } from '../lib/tripMapMarkers'
@@ -51,6 +50,7 @@ import {
   pickImageFromLibrary
 } from '../lib/imagePicker'
 import { formatPlaceTime, normalizeTime, periodFromTime, periodIcon } from '../lib/placeSchedule'
+import { resolveTripCurrency } from '../lib/tripCurrency'
 import { loadTripMedia, saveLocalPlaces, setPlacePhotoLocal, setTripCoverLocal, type TripMediaCache } from '../storage/tripMedia'
 import { colors, shadow, shadowStrong } from '../theme'
 import type { ActivitySuggestion, NavigationTarget, Trip, TripDayItem, TripToolsPanel } from '../types/trip'
@@ -171,6 +171,7 @@ export function TripWorkspaceScreen({
   const [mapModalOpen, setMapModalOpen] = useState(false)
   const [placePreviewMarkers, setPlacePreviewMarkers] = useState<LeafletMapMarker[]>([])
   const [toolsPanel, setToolsPanel] = useState<TripToolsPanel | null>(initialToolsPanel)
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   useEffect(() => {
     setToolsPanel(initialToolsPanel)
@@ -200,7 +201,18 @@ export function TripWorkspaceScreen({
       setLoadError('')
       try {
         const [fresh, media] = await Promise.all([fetchTrip(trip.id), loadTripMedia(trip.id)])
-        setTripData(fresh)
+        let tripDataNext = fresh
+        if (fresh.country) {
+          const expectedCurrency = resolveTripCurrency(fresh.country)
+          if (fresh.base_currency !== expectedCurrency) {
+            tripDataNext = await updateTrip(fresh.id, {
+              country: fresh.country,
+              budgetCurrency: expectedCurrency
+            })
+            onTripUpdated?.(tripDataNext)
+          }
+        }
+        setTripData(tripDataNext)
         setMediaCache(media)
         setLocalPlaces(media.localPlaces ?? {})
         setCoverImageUri(media.coverImageUri ?? fresh.cover_image_url ?? null)
@@ -398,6 +410,7 @@ export function TripWorkspaceScreen({
       const fresh = await updateTrip(currentTrip.id, {
         destinationName,
         country: (editPlace?.country ?? editCountry.trim()) || undefined,
+        countryCode: editPlace?.countryCode,
         startsAt,
         endsAt,
         latitude: editPlace?.latitude,
@@ -615,18 +628,8 @@ export function TripWorkspaceScreen({
   const expenseTotal = (currentTrip?.expenses ?? []).reduce((sum, item) => sum + Number(item.amount || 0), 0)
   const currency = currentTrip?.base_currency ?? 'BRL'
 
-  async function shareTrip() {
-    if (!currentTrip) return
-    try {
-      const token = await createTripInvite(currentTrip.id)
-      const link = `https://viagens.upyouridea.com.br/app?invite=${token}`
-      await Share.share({
-        message: `Vem planejar ${currentTrip.destination} comigo no Viagens! ${link}`,
-        url: link
-      })
-    } catch (error) {
-      Alert.alert('Compartilhar', error instanceof Error ? error.message : 'Não foi possível gerar o convite.')
-    }
+  function shareTrip() {
+    setInviteOpen(true)
   }
 
   function openTripMap() {
@@ -1244,6 +1247,7 @@ export function TripWorkspaceScreen({
         onClose={() => setToolsPanel(null)}
         onRefresh={refreshTripData}
       />
+      <TripInviteSheet visible={inviteOpen} trip={currentTrip} onClose={() => setInviteOpen(false)} />
     </Box>
   )
 }

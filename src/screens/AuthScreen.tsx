@@ -91,6 +91,7 @@ export function AuthScreen({
   loading,
   socialLoading = false,
   socialProvider = null,
+  invitePending = false,
   onModeChange,
   onNameChange,
   onEmailChange,
@@ -213,6 +214,14 @@ export function AuthScreen({
             <Text className="text-[11px] font-black text-primary">App de viagem</Text>
           </Box>
         </HStack>
+
+        {invitePending ? (
+          <Box className="mb-4 rounded-[22px] border border-[#EDE9FE] bg-viagens-lilac px-4 py-3">
+            <Text className="text-[13px] font-semibold leading-5 text-primary">
+              Você abriu um convite de viagem. Crie sua conta ou entre para aceitar e acessar roteiro, gastos e chat do grupo.
+            </Text>
+          </Box>
+        ) : null}
 
         <VStack className="pt-12">
           <Text className="text-[26px] font-black leading-[32px] text-foreground">

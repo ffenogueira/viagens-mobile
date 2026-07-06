@@ -7,11 +7,16 @@ import type {
   TripChecklistItem,
   TripDayPlan,
   TripExpense,
+  TripInvitePreview,
+  TripInviteRole,
   TripJournalEntry,
   TripMember,
   TripWishlistItem,
   WeatherDay
 } from '../types/trip'
+import { resolveTripCurrency } from '../lib/tripCurrency'
+import { invitePermissionToApiRole } from '../lib/tripInvite'
+import type { InvitePermissionLevel } from '../types/trip'
 
 const API_URL = 'https://api-viagens.upyouridea.com.br/v1'
 const TOKEN_KEY = 'viagens_auth_token'
@@ -426,10 +431,14 @@ export async function fetchLuggageStorage(lat?: number, lng?: number) {
   }
 }
 
-export async function createTripInvite(tripId: string): Promise<string> {
+export async function createTripInvite(tripId: string, permission: InvitePermissionLevel = 'editor'): Promise<string> {
+  const role = invitePermissionToApiRole(permission)
   const payload = await apiRequest<{ invite?: { token?: string }; token?: string; data?: { invite?: { token?: string } } }>(
     `/trips/${tripId}/invites`,
-    { method: 'POST' }
+    {
+      method: 'POST',
+      body: JSON.stringify({ role })
+    }
   )
   return (
     payload.invite?.token ||
@@ -437,6 +446,35 @@ export async function createTripInvite(tripId: string): Promise<string> {
     payload.data?.invite?.token ||
     ''
   )
+}
+
+export async function fetchInvitePreview(token: string): Promise<TripInvitePreview> {
+  const payload = await apiRequest<{ preview?: Record<string, unknown> }>(`/trip-invites/${token}/preview`)
+  const raw = payload.preview ?? {}
+  return {
+    destination: String(raw.destination ?? 'Viagem'),
+    country: raw.country ? String(raw.country) : null,
+    role: (raw.role as TripInviteRole) ?? 'MEMBER',
+    hostName: raw.hostName ? String(raw.hostName) : null,
+    expiresAt: raw.expiresAt ? String(raw.expiresAt) : null
+  }
+}
+
+export async function acceptTripInvite(token: string): Promise<{ tripId: string; role: TripInviteRole }> {
+  const payload = await apiRequest<{ tripId?: string; role?: TripInviteRole }>(`/trip-invites/${token}/accept`, {
+    method: 'POST'
+  })
+  if (!payload.tripId) {
+    throw new Error('Convite inválido ou expirado.')
+  }
+  return { tripId: payload.tripId, role: payload.role ?? 'MEMBER' }
+}
+
+export async function updateTripMemberRole(tripId: string, memberId: string, role: TripInviteRole) {
+  await apiRequest(`/trips/${tripId}/members/${memberId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ role })
+  })
 }
 
 export async function addChecklistItem(tripId: string, title: string) {
@@ -496,6 +534,7 @@ export async function createTrip(input?: {
   title?: string
   destinationName?: string
   country?: string
+  countryCode?: string
   description?: string
   startsAt?: string
   endsAt?: string
@@ -508,6 +547,8 @@ export async function createTrip(input?: {
     throw new Error('Informe as datas de início e fim da viagem.')
   }
 
+  const budgetCurrency = resolveTripCurrency(input?.country, input?.countryCode)
+
   const payload = await apiRequest<unknown>('/trips', {
     method: 'POST',
     body: JSON.stringify({
@@ -517,7 +558,7 @@ export async function createTrip(input?: {
       description: input?.description,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
-      budgetCurrency: 'EUR',
+      budgetCurrency,
       latitude: input?.latitude,
       longitude: input?.longitude,
       region: input?.region
@@ -532,17 +573,24 @@ export async function updateTrip(
   input: {
     destinationName?: string
     country?: string
+    countryCode?: string
     startsAt?: string
     endsAt?: string
     coverImageUrl?: string
     latitude?: number
     longitude?: number
     region?: string
+    budgetCurrency?: string
   }
 ): Promise<Trip> {
   const payload = await apiRequest<{ trip?: Record<string, unknown> }>(`/trips/${tripId}`, {
     method: 'PATCH',
-    body: JSON.stringify(input)
+    body: JSON.stringify({
+      ...input,
+      ...(input.country
+        ? { budgetCurrency: input.budgetCurrency ?? resolveTripCurrency(input.country, input.countryCode) }
+        : {})
+    })
   })
   if (payload.trip && typeof payload.trip === 'object') {
     return normalizeTrip(payload.trip)
