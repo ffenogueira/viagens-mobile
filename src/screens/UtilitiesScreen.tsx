@@ -196,6 +196,7 @@ function LuggagePanel() {
   const [loading, setLoading] = useState(true)
   const [cities, setCities] = useState<LuggageCity[]>([])
   const [nearest, setNearest] = useState<LuggageCity | null>(null)
+  const [coupon, setCoupon] = useState('UPYOURIDEA')
 
   useEffect(() => {
     async function load() {
@@ -212,6 +213,7 @@ function LuggagePanel() {
         const data = await fetchLuggageStorage(lat, lng)
         setCities(data.cities)
         setNearest(data.nearest_city)
+        setCoupon(data.radical_coupon ?? 'UPYOURIDEA')
       } finally {
         setLoading(false)
       }
@@ -227,6 +229,11 @@ function LuggagePanel() {
       <Text className="mt-1 text-sm font-semibold text-muted-foreground">
         Reserva e pagamento no site do parceiro.
       </Text>
+      <Box className="mt-3 rounded-2xl border border-[#EDE9FE] bg-viagens-lilac px-4 py-3">
+        <Text className="text-[13px] font-semibold leading-5 text-primary">
+          Radical Storage: 12% off com cupom <Text className="font-black">{coupon}</Text>
+        </Text>
+      </Box>
       {nearest ? (
         <Box className="mt-4 rounded-2xl border border-purple-200 bg-viagens-lilac p-4">
           <Text className="text-xs font-black uppercase text-primary">Mais perto de você</Text>
@@ -237,7 +244,7 @@ function LuggagePanel() {
               className="rounded-xl bg-sky-500"
               onPress={() => Linking.openURL(nearest.links.radical_storage)}
             >
-              <ButtonText className="text-white">Radical Storage</ButtonText>
+              <ButtonText className="text-white">Radical · cupom {coupon}</ButtonText>
             </Button>
             <Button
               size="sm"
@@ -256,7 +263,7 @@ function LuggagePanel() {
             <Text className="text-sm text-muted-foreground">{city.country}</Text>
             <HStack className="mt-3 gap-2">
               <Pressable onPress={() => Linking.openURL(city.links.radical_storage)}>
-                <Text className="text-xs font-black text-sky-600">Radical Storage ↗</Text>
+                <Text className="text-xs font-black text-sky-600">Radical · {coupon} ↗</Text>
               </Pressable>
               <Pressable onPress={() => Linking.openURL(city.links.bounce)}>
                 <Text className="text-xs font-black text-emerald-600">Bounce ↗</Text>

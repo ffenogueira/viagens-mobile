@@ -409,6 +409,13 @@ export type LuggageCity = {
   links: { radical_storage: string; bounce: string }
 }
 
+export type LuggageStorageData = {
+  cities: LuggageCity[]
+  nearest_city: LuggageCity | null
+  disclaimer?: string
+  radical_coupon?: string
+}
+
 export async function fetchNearbyToilets(lat: number, lng: number, radius = 2500): Promise<ToiletPlace[]> {
   const payload = await apiRequest<{ data?: { toilets?: ToiletPlace[] } }>(
     `/utilities/toilets?lat=${lat}&lng=${lng}&radius=${radius}&free_only=0`
@@ -416,18 +423,26 @@ export async function fetchNearbyToilets(lat: number, lng: number, radius = 2500
   return payload.data?.toilets || []
 }
 
-export async function fetchLuggageStorage(lat?: number, lng?: number) {
+export async function fetchLuggageStorage(lat?: number, lng?: number): Promise<LuggageStorageData> {
   const params = new URLSearchParams()
   if (lat != null && lng != null) {
     params.set('lat', String(lat))
     params.set('lng', String(lng))
   }
   const payload = await apiRequest<{
-    data?: { cities?: LuggageCity[]; nearest_city?: LuggageCity | null }
+    data?: {
+      cities?: LuggageCity[]
+      nearest_city?: LuggageCity | null
+      disclaimer?: string
+      providers?: Array<{ key: string; couponCode?: string }>
+    }
   }>(`/utilities/luggage-storage?${params.toString()}`)
+  const radical = payload.data?.providers?.find((p) => p.key === 'radical_storage')
   return {
     cities: payload.data?.cities || [],
-    nearest_city: payload.data?.nearest_city || null
+    nearest_city: payload.data?.nearest_city || null,
+    disclaimer: payload.data?.disclaimer,
+    radical_coupon: radical?.couponCode ?? 'UPYOURIDEA'
   }
 }
 
