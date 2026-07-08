@@ -1,15 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Modal, Pressable as RNPressable, View } from 'react-native'
-import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
+import { useTranslation } from 'react-i18next'
+import { Box, HStack, Pressable, Text } from '../../components/ui'
+import { formatAppDate } from '../i18n/format'
 import { isoFromDate } from '../lib/dates'
 import { colors } from '../theme'
-
-const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const MONTHS = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-]
 
 type BrazilianCalendarModalProps = {
   visible: boolean
@@ -38,6 +34,7 @@ export function BrazilianCalendarModal({
   onClose,
   onSelect
 }: BrazilianCalendarModalProps) {
+  const { t, i18n } = useTranslation('common')
   const initial = parseIso(value) ?? new Date()
   const [viewYear, setViewYear] = useState(initial.getFullYear())
   const [viewMonth, setViewMonth] = useState(initial.getMonth())
@@ -51,6 +48,21 @@ export function BrazilianCalendarModal({
 
   const selected = parseIso(value)
   const minDay = minimumDate ? startOfDay(minimumDate) : null
+
+  const weekdays = useMemo(() => {
+    // Anchor on a known Sunday so indices 0..6 map Dom..Sáb / Sun..Sat / Dom..Sáb
+    const sunday = new Date(2024, 0, 7)
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(sunday)
+      day.setDate(sunday.getDate() + index)
+      return formatAppDate(day, { weekday: 'short' }).replace('.', '')
+    })
+  }, [i18n.language])
+
+  const monthLabel = useMemo(() => {
+    const anchor = new Date(viewYear, viewMonth, 1)
+    return formatAppDate(anchor, { month: 'long' })
+  }, [viewMonth, viewYear, i18n.language])
 
   const cells = useMemo(() => {
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
@@ -98,7 +110,7 @@ export function BrazilianCalendarModal({
             <View style={{ alignSelf: 'center', width: 48, height: 5, borderRadius: 999, backgroundColor: '#E2E8F0', marginBottom: 16 }} />
             <Text className="text-[20px] font-black text-foreground">{title}</Text>
             <Text className="mt-1 mb-4 text-[13px] font-semibold text-muted-foreground">
-              Toque no dia desejado
+              {t('tapDesiredDay')}
             </Text>
 
             <HStack className="mb-3 items-center justify-between">
@@ -108,8 +120,8 @@ export function BrazilianCalendarModal({
               >
                 <Ionicons color={colors.ink} name="chevron-back" size={20} />
               </Pressable>
-              <Text className="text-[17px] font-black text-foreground">
-                {MONTHS[viewMonth]} {viewYear}
+              <Text className="text-[17px] font-black text-foreground capitalize">
+                {monthLabel} {viewYear}
               </Text>
               <Pressable
                 onPress={() => goMonth(1)}
@@ -120,7 +132,7 @@ export function BrazilianCalendarModal({
             </HStack>
 
             <HStack className="mb-2">
-              {WEEKDAYS.map((label) => (
+              {weekdays.map((label) => (
                 <Box key={label} className="flex-1 items-center py-1">
                   <Text className="text-[11px] font-black uppercase text-muted-foreground">{label}</Text>
                 </Box>
@@ -171,7 +183,7 @@ export function BrazilianCalendarModal({
             </View>
 
             <Pressable onPress={onClose} className="mt-4 items-center py-3">
-              <Text className="text-[15px] font-bold text-muted-foreground">Cancelar</Text>
+              <Text className="text-[15px] font-bold text-muted-foreground">{t('cancel')}</Text>
             </Pressable>
           </View>
         </RNPressable>

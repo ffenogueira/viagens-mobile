@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { Box, Pressable, Text, VStack } from '../../components/ui'
 import { GoogleIcon } from './icons/GoogleIcon'
 import { colors } from '../theme'
@@ -12,28 +13,24 @@ type SocialLoginButtonsProps = {
   onPress: (provider: SocialProvider) => void
 }
 
-type ProviderConfig = {
-  id: SocialProvider
-  title: string
-  icon: (busy: boolean) => React.ReactNode
-}
-
 export function SocialLoginButtons({
   loading,
   loadingProvider,
   onPress
 }: SocialLoginButtonsProps) {
-  const providers: ProviderConfig[] = [
+  const { t } = useTranslation('auth')
+
+  const providers = [
     {
-      id: 'google',
-      title: 'Continuar com Google',
-      icon: (busy) =>
+      id: 'google' as const,
+      title: t('continueGoogle'),
+      icon: (busy: boolean) =>
         busy ? <ActivityIndicator color={colors.primary} size="small" /> : <GoogleIcon size={20} />
     },
     {
-      id: 'apple',
-      title: 'Continuar com Apple',
-      icon: (busy) =>
+      id: 'apple' as const,
+      title: t('continueApple'),
+      icon: (busy: boolean) =>
         busy ? (
           <ActivityIndicator color="#111827" size="small" />
         ) : (

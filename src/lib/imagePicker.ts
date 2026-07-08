@@ -1,10 +1,11 @@
 import * as ImagePicker from 'expo-image-picker'
 import { Alert } from 'react-native'
+import { i18n } from '../i18n'
 
 export async function pickImageFromLibrary(): Promise<string | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
   if (permission.status !== 'granted') {
-    Alert.alert('Permita a galeria', 'Precisamos acessar suas fotos para escolher uma imagem.')
+    Alert.alert(i18n.t('allowGallery', { ns: 'common' }), i18n.t('allowGalleryBody', { ns: 'common' }))
     return null
   }
 
@@ -22,7 +23,7 @@ export async function pickImageFromLibrary(): Promise<string | null> {
 export async function pickImageFromCamera(): Promise<string | null> {
   const permission = await ImagePicker.requestCameraPermissionsAsync()
   if (permission.status !== 'granted') {
-    Alert.alert('Permita a câmera', 'Precisamos da câmera para tirar uma foto.')
+    Alert.alert(i18n.t('allowCamera', { ns: 'common' }), i18n.t('allowCameraBody', { ns: 'common' }))
     return null
   }
 
@@ -37,10 +38,10 @@ export async function pickImageFromCamera(): Promise<string | null> {
 }
 
 export function askImageSource(onLibrary: () => void, onCamera: () => void) {
-  Alert.alert('Escolher foto', 'De onde você quer pegar a imagem?', [
-    { text: 'Galeria', onPress: onLibrary },
-    { text: 'Câmera', onPress: onCamera },
-    { text: 'Cancelar', style: 'cancel' }
+  Alert.alert(i18n.t('choosePhoto', { ns: 'common' }), i18n.t('choosePhotoBody', { ns: 'common' }), [
+    { text: i18n.t('gallery', { ns: 'common' }), onPress: onLibrary },
+    { text: i18n.t('camera', { ns: 'common' }), onPress: onCamera },
+    { text: i18n.t('cancel', { ns: 'common' }), style: 'cancel' }
   ])
 }
 

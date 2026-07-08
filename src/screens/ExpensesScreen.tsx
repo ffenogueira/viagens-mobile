@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import React, { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Modal, TextInput } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { formatAppNumber } from '../i18n/format'
 import {
   Box,
   Button,
@@ -28,6 +30,7 @@ export function ExpensesScreen({
   onBack: () => void
   onOpenBillSplit?: () => void
 }) {
+  const { t } = useTranslation('expenses')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [expenses, setExpenses] = useState<TripExpense[]>([])
@@ -59,7 +62,7 @@ export function ExpensesScreen({
       const trip = await fetchTrip(selectedTrip.id)
       setExpenses(trip.expenses ?? [])
     } catch (error) {
-      Alert.alert('Gastos indisponíveis', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(t('unavailable'), error instanceof Error ? error.message : t('common:tryAgain'))
     } finally {
       setLoading(false)
     }
@@ -71,10 +74,7 @@ export function ExpensesScreen({
 
   function openSheet(nextMode: AddMode) {
     if (nextMode === 'audio') {
-      Alert.alert(
-        'Gasto por voz',
-        'Em breve você poderá dizer “gastei 45 euros no jantar” e o app registra sozinho. Por enquanto, escreva o valor abaixo.'
-      )
+      Alert.alert(t('voiceTitle'), t('voiceBody'))
       setMode('manual')
     } else {
       setMode(nextMode)
@@ -89,7 +89,7 @@ export function ExpensesScreen({
   async function pickReceiptPhoto() {
     const permission = await ImagePicker.requestCameraPermissionsAsync()
     if (permission.status !== 'granted') {
-      Alert.alert('Permita a câmera', 'Precisamos da câmera para fotografar o recibo.')
+      Alert.alert(t('common:allowCamera'), t('common:allowCameraReceipt'))
       return
     }
 
@@ -100,7 +100,7 @@ export function ExpensesScreen({
 
     if (!result.canceled && result.assets[0]?.uri) {
       setReceiptUri(result.assets[0].uri)
-      if (!title.trim()) setTitle('Recibo')
+      if (!title.trim()) setTitle(t('receiptDefaultTitle'))
       setMode('receipt')
       setSheetOpen(true)
     }
@@ -110,7 +110,7 @@ export function ExpensesScreen({
     if (!selectedTrip) return
     const parsedAmount = Number(amount.replace(',', '.'))
     if (!title.trim() || !parsedAmount || parsedAmount <= 0) {
-      Alert.alert('Informe o gasto', 'Digite o que foi e quanto custou.')
+      Alert.alert(t('informExpense'), t('informExpenseBody'))
       return
     }
 
@@ -128,7 +128,7 @@ export function ExpensesScreen({
       setExpenses((current) => [created, ...current])
       setSheetOpen(false)
     } catch (error) {
-      Alert.alert('Gasto não salvo', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(t('notSaved'), error instanceof Error ? error.message : t('common:tryAgain'))
     } finally {
       setSaving(false)
     }
@@ -141,8 +141,8 @@ export function ExpensesScreen({
   return (
     <>
       <OverlayScreenLayout
-        title="Controle de gastos"
-        subtitle={`${selectedTrip.destination} · acompanhe tudo e veja o relatório no final`}
+        title={t('title')}
+        subtitle={t('subtitle', { destination: selectedTrip.destination })}
         onBack={onBack}
       >
         {loading ? (
@@ -151,16 +151,16 @@ export function ExpensesScreen({
           <VStack className="gap-4">
             <Box className="rounded-[28px] bg-primary p-5">
               <Text className="text-[12px] font-black uppercase tracking-[1.4px] text-white/75">
-                Relatório da viagem
+                {t('report')}
               </Text>
               <Text className="mt-2 text-[34px] font-black text-white">
-                {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+                {formatAppNumber(total, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
               </Text>
               <HStack className="mt-4 gap-4">
-                <ReportStat label="Lançamentos" value={String(expenses.length)} />
+                <ReportStat label={t('entries')} value={String(expenses.length)} />
                 <ReportStat
-                  label="Média/dia"
-                  value={`${(total / tripDays).toLocaleString('pt-BR', {
+                  label={t('avgPerDay')}
+                  value={`${formatAppNumber(total / tripDays, {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0
                   })} ${currency}`}
@@ -169,9 +169,9 @@ export function ExpensesScreen({
             </Box>
 
             <HStack className="gap-3">
-              <QuickAddButton icon="camera-outline" label="Foto do recibo" onPress={() => void pickReceiptPhoto()} />
-              <QuickAddButton icon="create-outline" label="Escrever gasto" onPress={() => openSheet('manual')} />
-              <QuickAddButton icon="mic-outline" label="Falar gasto" onPress={() => openSheet('audio')} />
+              <QuickAddButton icon="camera-outline" label={t('photoReceipt')} onPress={() => void pickReceiptPhoto()} />
+              <QuickAddButton icon="create-outline" label={t('writeExpense')} onPress={() => openSheet('manual')} />
+              <QuickAddButton icon="mic-outline" label={t('speakExpense')} onPress={() => openSheet('audio')} />
             </HStack>
 
             {onOpenBillSplit ? (
@@ -186,9 +186,9 @@ export function ExpensesScreen({
                       <Ionicons color={colors.primary} name="people-outline" size={22} />
                     </Box>
                     <VStack>
-                      <Text className="text-[16px] font-black text-foreground">Dividir contas</Text>
+                      <Text className="text-[16px] font-black text-foreground">{t('splitBills')}</Text>
                       <Text className="text-[12px] font-semibold text-muted-foreground">
-                        Veja quem deve para quem no grupo
+                        {t('splitBillsHint')}
                       </Text>
                     </VStack>
                   </HStack>
@@ -197,10 +197,10 @@ export function ExpensesScreen({
               </Pressable>
             ) : null}
 
-            <Text className="text-[18px] font-black text-foreground">Lançamentos</Text>
+            <Text className="text-[18px] font-black text-foreground">{t('entries')}</Text>
             {expenses.length === 0 ? (
               <Text className="text-sm font-semibold text-muted-foreground">
-                Nenhum gasto ainda. Fotografe um recibo ou escreva quanto gastou.
+                {t('empty')}
               </Text>
             ) : (
               expenses.map((expense) => (
@@ -216,7 +216,7 @@ export function ExpensesScreen({
                       ) : null}
                     </VStack>
                     <Text className="text-[16px] font-black text-foreground">
-                      {Number(expense.amount).toLocaleString('pt-BR', {
+                      {formatAppNumber(Number(expense.amount), {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                       })}{' '}
@@ -235,30 +235,28 @@ export function ExpensesScreen({
           <Box className="rounded-t-[32px] bg-white px-5 pb-8 pt-4">
             <Box className="mb-5 h-1.5 w-16 self-center rounded-full bg-[#D1D5DB]" />
             <Text className="text-[24px] font-black text-foreground">
-              {mode === 'receipt' ? 'Gasto com recibo' : 'Registrar gasto'}
+              {mode === 'receipt' ? t('sheetReceiptTitle') : t('sheetManualTitle')}
             </Text>
             <Text className="mt-1 text-[13px] font-semibold text-muted-foreground">
-              {mode === 'receipt'
-                ? 'Confirme o valor. A foto fica salva no seu celular por enquanto.'
-                : 'Ex.: jantar, metro, ingresso, compras.'}
+              {mode === 'receipt' ? t('sheetReceiptHint') : t('sheetManualHint')}
             </Text>
 
             {receiptUri ? (
               <Box className="mt-4 rounded-2xl bg-viagens-lilac px-4 py-3">
-                <Text className="text-[12px] font-black text-primary">Recibo fotografado</Text>
+                <Text className="text-[12px] font-black text-primary">{t('receiptCaptured')}</Text>
               </Box>
             ) : null}
 
-            <Text className="mb-2 mt-5 text-xs font-black uppercase text-muted-foreground">O que foi</Text>
+            <Text className="mb-2 mt-5 text-xs font-black uppercase text-muted-foreground">{t('whatWas')}</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
-              placeholder="Jantar, taxi, museu..."
+              placeholder={t('whatPlaceholder')}
               placeholderTextColor={colors.muted}
               className="rounded-2xl border border-[#E5E7EB] px-4 py-3 text-[16px] font-semibold text-foreground"
             />
 
-            <Text className="mb-2 mt-4 text-xs font-black uppercase text-muted-foreground">Quanto custou</Text>
+            <Text className="mb-2 mt-4 text-xs font-black uppercase text-muted-foreground">{t('howMuch')}</Text>
             <TextInput
               value={amount}
               onChangeText={setAmount}
@@ -268,20 +266,20 @@ export function ExpensesScreen({
               className="rounded-2xl border border-[#E5E7EB] px-4 py-3 text-[16px] font-semibold text-foreground"
             />
 
-            <Text className="mb-2 mt-4 text-xs font-black uppercase text-muted-foreground">Observação (opcional)</Text>
+            <Text className="mb-2 mt-4 text-xs font-black uppercase text-muted-foreground">{t('noteOptional')}</Text>
             <TextInput
               value={note}
               onChangeText={setNote}
-              placeholder="Dividido com Ana, pagamento em dinheiro..."
+              placeholder={t('notePlaceholder')}
               placeholderTextColor={colors.muted}
               className="rounded-2xl border border-[#E5E7EB] px-4 py-3 text-[16px] font-semibold text-foreground"
             />
 
             <Button className="mt-6 h-14 rounded-full bg-primary" onPress={submitExpense} disabled={saving}>
-              {saving ? <ButtonSpinner color="#FFF" /> : <ButtonText className="font-black text-white">Salvar gasto</ButtonText>}
+              {saving ? <ButtonSpinner color="#FFF" /> : <ButtonText className="font-black text-white">{t('saveExpense')}</ButtonText>}
             </Button>
             <Pressable onPress={() => setSheetOpen(false)} className="mt-4 items-center">
-              <Text className="text-[14px] font-bold text-muted-foreground">Cancelar</Text>
+              <Text className="text-[14px] font-bold text-muted-foreground">{t('common:cancel')}</Text>
             </Pressable>
           </Box>
         </Box>

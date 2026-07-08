@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Alert, ScrollView } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Button,
@@ -18,12 +19,6 @@ import type { Trip } from '../types/trip'
 
 type ToolMode = 'fefai' | 'camera' | 'checkin'
 
-const prompts = [
-  'Reorganiza meu roteiro sem estourar o orçamento?',
-  'Divide essa conta entre nós quatro.',
-  'O que falta no checklist da viagem?'
-]
-
 export function ToolsScreen({
   selectedTrip,
   initialMode = 'fefai'
@@ -31,8 +26,10 @@ export function ToolsScreen({
   selectedTrip: Trip | null
   initialMode?: ToolMode
 }) {
+  const { t } = useTranslation('tools')
   const [mode, setMode] = useState<ToolMode>(initialMode)
   const [busy, setBusy] = useState(false)
+  const prompts = useMemo(() => [t('prompt1'), t('prompt2'), t('prompt3')], [t])
   const [question, setQuestion] = useState(prompts[0])
   const [answer, setAnswer] = useState('')
 
@@ -40,9 +37,13 @@ export function ToolsScreen({
     setMode(initialMode)
   }, [initialMode])
 
+  useEffect(() => {
+    setQuestion(prompts[0])
+  }, [prompts])
+
   async function askFefai() {
     if (!selectedTrip) {
-      Alert.alert('Crie uma viagem', 'A FEFAI precisa de uma viagem ativa para responder com contexto.')
+      Alert.alert(t('needTripTitle'), t('needTripBody'))
       return
     }
     setBusy(true)
@@ -52,27 +53,23 @@ export function ToolsScreen({
         method: 'POST',
         body: JSON.stringify({ prompt: question })
       })
-      setAnswer(data.answer || 'Analisando sua viagem…')
+      setAnswer(data.answer || t('analyzing'))
     } catch (error) {
-      Alert.alert('FEFAI indisponível', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(t('unavailable'), error instanceof Error ? error.message : t('common:tryAgain'))
     } finally {
       setBusy(false)
     }
   }
 
   const tabs: Array<{ id: ToolMode; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
-    { id: 'fefai', label: 'FEFAI', icon: 'sparkles' },
-    { id: 'camera', label: 'Preço', icon: 'scan' },
-    { id: 'checkin', label: 'Check-in', icon: 'location' }
+    { id: 'fefai', label: t('tabFefai'), icon: 'sparkles' },
+    { id: 'camera', label: t('tabPrice'), icon: 'scan' },
+    { id: 'checkin', label: t('tabCheckin'), icon: 'location' }
   ]
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
-      <SectionTitle
-        kicker="Assistente"
-        title="IA & ferramentas"
-        subtitle="Escolha uma aba — menos texto, mais ação."
-      />
+      <SectionTitle kicker={t('kicker')} title={t('title')} subtitle={t('subtitle')} />
 
       <HStack className="mb-5 rounded-full border border-[#E5E7EB] bg-white p-1">
         {tabs.map((tab) => {
@@ -97,6 +94,7 @@ export function ToolsScreen({
       {mode === 'fefai' && (
         <FefaiPanel
           selectedTrip={selectedTrip}
+          prompts={prompts}
           question={question}
           answer={answer}
           busy={busy}
@@ -112,6 +110,7 @@ export function ToolsScreen({
 
 function FefaiPanel({
   selectedTrip,
+  prompts,
   question,
   answer,
   busy,
@@ -119,20 +118,22 @@ function FefaiPanel({
   onAsk
 }: {
   selectedTrip: Trip | null
+  prompts: string[]
   question: string
   answer: string
   busy: boolean
   onSelectQuestion: (value: string) => void
   onAsk: () => void
 }) {
+  const { t } = useTranslation('tools')
   return (
     <VStack className="gap-4">
       <Box className="rounded-[28px] bg-viagens-lilac p-5">
-        <Text className="text-xs font-black uppercase text-primary">Copilota da viagem</Text>
+        <Text className="text-xs font-black uppercase text-primary">{t('tabFefai')}</Text>
         <Text className="mt-2 text-[15px] font-semibold leading-6 text-primary">
           {selectedTrip
-            ? `Contexto: ${selectedTrip.destination}${selectedTrip.country ? `, ${selectedTrip.country}` : ''}`
-            : 'Crie uma viagem na aba Viagem para ativar respostas personalizadas.'}
+            ? `${selectedTrip.destination}${selectedTrip.country ? `, ${selectedTrip.country}` : ''}`
+            : t('needTripBody')}
         </Text>
       </Box>
 
@@ -151,12 +152,11 @@ function FefaiPanel({
       </VStack>
 
       <Button className="h-12 rounded-full bg-primary" onPress={onAsk} disabled={busy}>
-        {busy ? <ButtonSpinner color="#FFF" /> : <ButtonText className="font-black text-white">Perguntar</ButtonText>}
+        {busy ? <ButtonSpinner color="#FFF" /> : <ButtonText className="font-black text-white">{t('tabFefai')}</ButtonText>}
       </Button>
 
       {answer ? (
         <Box className="rounded-2xl border border-[#EEF2FF] bg-white p-4">
-          <Text className="text-xs font-black uppercase text-muted-foreground">Resposta</Text>
           <Text className="mt-2 text-sm font-semibold leading-6 text-foreground">{answer}</Text>
         </Box>
       ) : null}
@@ -165,30 +165,30 @@ function FefaiPanel({
 }
 
 function CameraPanel() {
+  const { t } = useTranslation('tools')
   return (
     <VStack className="items-center rounded-[28px] border border-[#EEF2FF] bg-white px-5 py-8">
       <Box className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-viagens-sky-soft">
         <Ionicons color={colors.sky} name="scan" size={32} />
       </Box>
-      <Text className="text-center text-xl font-black text-foreground">Ler preço na hora</Text>
+      <Text className="text-center text-xl font-black text-foreground">{t('tabPrice')}</Text>
       <Text className="mt-2 text-center text-sm font-semibold leading-6 text-muted-foreground">
-        Aponte para uma placa, cardápio ou recibo. Em breve: leitura automática, conversão de moeda e lançamento nos gastos.
+        {t('subtitle')}
       </Text>
     </VStack>
   )
 }
 
 function CheckinPanel({ selectedTrip }: { selectedTrip: Trip | null }) {
+  const { t } = useTranslation('tools')
   return (
     <VStack className="items-center rounded-[28px] border border-[#EEF2FF] bg-white px-5 py-8">
       <Box className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50">
         <Ionicons color={colors.mint} name="location" size={32} />
       </Box>
-      <Text className="text-center text-xl font-black text-foreground">Check-in do grupo</Text>
+      <Text className="text-center text-xl font-black text-foreground">{t('tabCheckin')}</Text>
       <Text className="mt-2 text-center text-sm font-semibold leading-6 text-muted-foreground">
-        {selectedTrip
-          ? 'Compartilhe localização temporária com quem viaja com você — só quando autorizar.'
-          : 'Crie uma viagem para habilitar check-ins.'}
+        {selectedTrip ? t('subtitle') : t('needTripBody')}
       </Text>
     </VStack>
   )

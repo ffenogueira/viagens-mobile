@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Button,
@@ -370,10 +371,11 @@ function SegmentedTrips({
   active: TripSegment
   onChange: (value: TripSegment) => void
 }) {
-  const segments: Array<{ id: typeof active; label: string }> = [
-    { id: 'upcoming', label: 'Próxima' },
-    { id: 'planning', label: 'Planejando' },
-    { id: 'past', label: 'Passadas' }
+  const { t } = useTranslation('trip')
+  const segments: Array<{ id: typeof active; labelKey: 'segmentUpcoming' | 'segmentPlanning' | 'segmentPast' }> = [
+    { id: 'upcoming', labelKey: 'segmentUpcoming' },
+    { id: 'planning', labelKey: 'segmentPlanning' },
+    { id: 'past', labelKey: 'segmentPast' }
   ]
 
   return (
@@ -389,7 +391,7 @@ function SegmentedTrips({
             }`}
           >
             <Text className={`text-[14px] font-black ${selected ? 'text-white' : 'text-muted-foreground'}`}>
-              {segment.label}
+              {t(segment.labelKey)}
             </Text>
           </Pressable>
         )
@@ -407,20 +409,21 @@ function EmptySegmentState({
   loading: boolean
   onCreateTrip: () => void
 }) {
-  const copy: Record<TripSegment, { title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  const { t } = useTranslation('trip')
+  const copy: Record<TripSegment, { titleKey: string; detailKey: string; icon: keyof typeof Ionicons.glyphMap }> = {
     upcoming: {
-      title: 'Nenhuma viagem próxima',
-      detail: 'Viagens com data de embarque ou em andamento aparecem aqui. Crie uma nova ou confira Planejando.',
+      titleKey: 'emptyUpcoming',
+      detailKey: 'emptyUpcomingDetail',
       icon: 'airplane-outline'
     },
     planning: {
-      title: 'Nada em planejamento',
-      detail: 'Destinos ainda sem data de embarque ficam nesta aba até você definir quando viajar.',
+      titleKey: 'emptyPlanning',
+      detailKey: 'emptyPlanningDetail',
       icon: 'calendar-outline'
     },
     past: {
-      title: 'Nenhuma viagem passada',
-      detail: 'Quando uma viagem terminar, ela aparece aqui com memórias e relatório.',
+      titleKey: 'emptyPast',
+      detailKey: 'emptyPastDetail',
       icon: 'time-outline'
     }
   }
@@ -433,9 +436,9 @@ function EmptySegmentState({
         <Ionicons color={colors.primary} name={content.icon} size={42} />
       </Box>
 
-      <Text className="text-center text-[24px] font-black leading-[30px] text-foreground">{content.title}</Text>
+      <Text className="text-center text-[24px] font-black leading-[30px] text-foreground">{t(content.titleKey)}</Text>
       <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
-        {content.detail}
+        {t(content.detailKey)}
       </Text>
 
       {segment !== 'past' ? (
@@ -448,7 +451,7 @@ function EmptySegmentState({
           {loading ? (
             <ButtonSpinner color="#FFFFFF" />
           ) : (
-            <ButtonText className="text-[16px] font-black text-white">Criar viagem</ButtonText>
+            <ButtonText className="text-[16px] font-black text-white">{t('createTrip')}</ButtonText>
           )}
         </Button>
       ) : null}
@@ -463,6 +466,7 @@ function EmptyTripState({
   loading: boolean
   onCreateTrip: () => void
 }) {
+  const { t } = useTranslation('trip')
   return (
     <VStack className="items-center rounded-[34px] border border-[#EDE9FE] bg-white px-5 py-7" style={shadow}>
       <Box className="mb-4 h-[112px] w-[112px] items-center justify-center rounded-[34px] bg-viagens-lilac">
@@ -470,10 +474,10 @@ function EmptyTripState({
       </Box>
 
       <Text className="text-center text-[27px] font-black leading-[32px] text-foreground">
-        Sua primeira viagem começa aqui
+        {t('emptyFirstTitle')}
       </Text>
       <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
-        Crie um espaço para roteiro, grupo, orçamento, documentos, FEFAI e memórias.
+        {t('emptyFirstDetail')}
       </Text>
 
       <Button
@@ -486,7 +490,7 @@ function EmptyTripState({
           <ButtonSpinner color="#FFFFFF" />
         ) : (
           <ButtonText className="text-[16px] font-black text-white">
-            Criar viagem
+            {t('createTrip')}
           </ButtonText>
         )}
       </Button>

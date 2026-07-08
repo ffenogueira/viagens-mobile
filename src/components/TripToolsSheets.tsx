@@ -8,12 +8,14 @@ import {
   TextInput,
   View
 } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   addChecklistItem,
   addJournalEntry,
   addWishlistItem,
   updateChecklistItem
 } from '../api/client'
+import { formatAppDateTime } from '../i18n/format'
 import { colors } from '../theme'
 import type { Trip, TripChecklistItem, TripJournalEntry, TripWishlistItem } from '../types/trip'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
@@ -27,6 +29,7 @@ type SheetShellProps = {
 }
 
 function SheetShell({ visible, title, subtitle, onClose, children }: SheetShellProps) {
+  const { t } = useTranslation('common')
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' }}>
@@ -60,7 +63,7 @@ function SheetShell({ visible, title, subtitle, onClose, children }: SheetShellP
             )}
             {children}
             <Pressable onPress={onClose} className="mt-4 items-center">
-              <Text className="text-[14px] font-bold text-muted-foreground">Fechar</Text>
+              <Text className="text-[14px] font-bold text-muted-foreground">{t('close')}</Text>
             </Pressable>
           </View>
         </ScrollView>
@@ -84,6 +87,7 @@ export function TripWishlistSheet({
   onRefresh: () => Promise<void>
   onAddToDay: (title: string) => void
 }) {
+  const { t } = useTranslation('trip')
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
@@ -97,7 +101,7 @@ export function TripWishlistSheet({
       setNotes('')
       await onRefresh()
     } catch (error) {
-      Alert.alert('Wishlist', error instanceof Error ? error.message : 'Não foi possível salvar.')
+      Alert.alert(t('wishlist'), error instanceof Error ? error.message : t('common:couldNotSave'))
     } finally {
       setSaving(false)
     }
@@ -106,8 +110,8 @@ export function TripWishlistSheet({
   return (
     <SheetShell
       visible={visible}
-      title="Wishlist"
-      subtitle={trip ? `Lugares para visitar em ${trip.destination}` : undefined}
+      title={t('wishlist')}
+      subtitle={trip ? t('wishlistPlaces', { destination: trip.destination }) : undefined}
       onClose={onClose}
     >
       <VStack className="gap-3">
@@ -130,7 +134,7 @@ export function TripWishlistSheet({
                   }}
                   className="rounded-full bg-viagens-lilac px-3 py-2"
                 >
-                  <Text className="text-[11px] font-black text-primary">No dia</Text>
+                  <Text className="text-[11px] font-black text-primary">{t('wishlistOnDay')}</Text>
                 </Pressable>
               </HStack>
             </Box>
@@ -138,7 +142,7 @@ export function TripWishlistSheet({
         ) : (
           <Box className="rounded-2xl border border-dashed border-[#E5E7EB] bg-[#FAFAFF] px-4 py-6">
             <Text className="text-center text-[14px] font-semibold text-muted-foreground">
-              Salve restaurantes, museus e passeios que você quer conhecer.
+              {t('wishlistEmpty')}
             </Text>
           </Box>
         )}
@@ -146,14 +150,14 @@ export function TripWishlistSheet({
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Ex.: Castelo de San Felipe"
+          placeholder={t('wishlistPlaceholder')}
           placeholderTextColor={colors.muted}
           style={inputStyle}
         />
         <TextInput
           value={notes}
           onChangeText={setNotes}
-          placeholder="Por que você quer ir? (opcional)"
+          placeholder={t('wishlistNotesPlaceholder')}
           placeholderTextColor={colors.muted}
           style={inputStyle}
         />
@@ -165,7 +169,7 @@ export function TripWishlistSheet({
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text className="text-[16px] font-black text-white">Salvar na wishlist</Text>
+            <Text className="text-[16px] font-black text-white">{t('wishlistSave')}</Text>
           )}
         </Pressable>
       </VStack>
@@ -186,6 +190,7 @@ export function TripChecklistSheet({
   onClose: () => void
   onRefresh: () => Promise<void>
 }) {
+  const { t } = useTranslation('trip')
   const [title, setTitle] = useState('')
   const [saving, setSaving] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
@@ -198,7 +203,7 @@ export function TripChecklistSheet({
       setTitle('')
       await onRefresh()
     } catch (error) {
-      Alert.alert('Checklist', error instanceof Error ? error.message : 'Não foi possível salvar.')
+      Alert.alert(t('checklist'), error instanceof Error ? error.message : t('common:couldNotSave'))
     } finally {
       setSaving(false)
     }
@@ -211,7 +216,7 @@ export function TripChecklistSheet({
       await updateChecklistItem(trip.id, item.id, !item.isCompleted)
       await onRefresh()
     } catch (error) {
-      Alert.alert('Checklist', error instanceof Error ? error.message : 'Não foi possível atualizar.')
+      Alert.alert(t('checklist'), error instanceof Error ? error.message : t('common:couldNotUpdate'))
     } finally {
       setTogglingId(null)
     }
@@ -222,8 +227,12 @@ export function TripChecklistSheet({
   return (
     <SheetShell
       visible={visible}
-      title="Checklist"
-      subtitle={trip ? `${doneCount}/${items.length} concluídas · ${trip.destination}` : undefined}
+      title={t('checklist')}
+      subtitle={
+        trip
+          ? t('checklistProgress', { done: doneCount, total: items.length, destination: trip.destination })
+          : undefined
+      }
       onClose={onClose}
     >
       <VStack className="gap-3">
@@ -263,7 +272,7 @@ export function TripChecklistSheet({
         ) : (
           <Box className="rounded-2xl border border-dashed border-[#E5E7EB] bg-[#FAFAFF] px-4 py-6">
             <Text className="text-center text-[14px] font-semibold text-muted-foreground">
-              Documentos, malas, reservas — organize tudo antes de embarcar.
+              {t('checklistEmpty')}
             </Text>
           </Box>
         )}
@@ -271,7 +280,7 @@ export function TripChecklistSheet({
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Ex.: Passaporte e seguro viagem"
+          placeholder={t('checklistPlaceholder')}
           placeholderTextColor={colors.muted}
           style={inputStyle}
         />
@@ -283,7 +292,7 @@ export function TripChecklistSheet({
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text className="text-[16px] font-black text-white">Adicionar tarefa</Text>
+            <Text className="text-[16px] font-black text-white">{t('checklistAdd')}</Text>
           )}
         </Pressable>
       </VStack>
@@ -304,6 +313,7 @@ export function TripBoardSheet({
   onClose: () => void
   onRefresh: () => Promise<void>
 }) {
+  const { t } = useTranslation('trip')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
@@ -317,7 +327,7 @@ export function TripBoardSheet({
       setBody('')
       await onRefresh()
     } catch (error) {
-      Alert.alert('Mural', error instanceof Error ? error.message : 'Não foi possível publicar.')
+      Alert.alert(t('journal'), error instanceof Error ? error.message : t('common:couldNotPublish'))
     } finally {
       setSaving(false)
     }
@@ -326,8 +336,8 @@ export function TripBoardSheet({
   return (
     <SheetShell
       visible={visible}
-      title="Mural da viagem"
-      subtitle={trip ? `Notas e lembretes de ${trip.destination}` : undefined}
+      title={t('journalTitle')}
+      subtitle={trip ? t('journalSubtitle', { destination: trip.destination }) : undefined}
       onClose={onClose}
     >
       <VStack className="gap-3">
@@ -342,19 +352,14 @@ export function TripBoardSheet({
               </Text>
               <Text className="mt-2 text-[11px] font-bold text-muted-foreground">
                 {entry.user?.name ? `${entry.user.name} · ` : ''}
-                {new Date(entry.createdAt).toLocaleDateString('pt-BR', {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+                {formatAppDateTime(entry.createdAt)}
               </Text>
             </Box>
           ))
         ) : (
           <Box className="rounded-2xl border border-dashed border-[#E5E7EB] bg-[#FAFAFF] px-4 py-6">
             <Text className="text-center text-[14px] font-semibold text-muted-foreground">
-              Combine ideias, lembretes e combinados do grupo em um só lugar.
+              {t('journalEmpty')}
             </Text>
           </Box>
         )}
@@ -362,14 +367,14 @@ export function TripBoardSheet({
         <TextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="Título (opcional)"
+          placeholder={t('notesOptional')}
           placeholderTextColor={colors.muted}
           style={inputStyle}
         />
         <TextInput
           value={body}
           onChangeText={setBody}
-          placeholder="Escreva uma nota para o grupo..."
+          placeholder={t('journalEmpty')}
           placeholderTextColor={colors.muted}
           multiline
           textAlignVertical="top"
@@ -383,7 +388,7 @@ export function TripBoardSheet({
           {saving ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text className="text-[16px] font-black text-white">Publicar no mural</Text>
+            <Text className="text-[16px] font-black text-white">{t('publish')}</Text>
           )}
         </Pressable>
       </VStack>

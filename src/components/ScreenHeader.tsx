@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   HStack,
@@ -25,7 +26,8 @@ export function ScreenHeader({
   onNotificationPress,
   showNotification = true
 }: ScreenHeaderProps) {
-  const firstName = user?.name?.split(' ')[0] || 'Viajante'
+  const { t } = useTranslation('common')
+  const firstName = user?.name?.split(' ')[0] || t('traveler')
 
   return (
     <HStack className="items-center justify-between px-5 pb-4 pt-3">
@@ -36,9 +38,9 @@ export function ScreenHeader({
           fallbackClassName="font-black text-primary"
         />
         <VStack className="flex-1">
-          <Text className="text-lg font-black text-foreground">Olá, {firstName}</Text>
+          <Text className="text-lg font-black text-foreground">{t('helloName', { name: firstName })}</Text>
           <Text className="text-sm font-semibold text-muted-foreground" numberOfLines={1}>
-            {destination || 'Seu workspace de viagens'}
+            {destination || t('yourTravelWorkspace')}
           </Text>
         </VStack>
       </HStack>

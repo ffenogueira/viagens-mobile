@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { Box, HStack, Text, VStack } from '../../components/ui'
 import { fetchWeatherForecast } from '../api/client'
 import { EmptyTripNotice, OverlayScreenLayout } from '../components/OverlayScreenLayout'
+import { formatAppDate } from '../i18n/format'
 import { colors, shadow } from '../theme'
 import type { Trip, WeatherDay } from '../types/trip'
 
@@ -14,6 +16,7 @@ export function WeatherScreen({
   selectedTrip: Trip | null
   onBack: () => void
 }) {
+  const { t } = useTranslation('trip')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [place, setPlace] = useState('')
@@ -30,12 +33,12 @@ export function WeatherScreen({
         setPlace(forecast.place)
         setDays(forecast.days)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Não foi possível carregar a previsão.')
+        setError(err instanceof Error ? err.message : t('weatherLoadFailed'))
       } finally {
         setLoading(false)
       }
     })()
-  }, [selectedTrip])
+  }, [selectedTrip, t])
 
   if (!selectedTrip) {
     return <EmptyTripNotice onBack={onBack} />
@@ -43,7 +46,7 @@ export function WeatherScreen({
 
   return (
     <OverlayScreenLayout
-      title="Previsão do tempo"
+      title={t('weatherTitle')}
       subtitle={place || `${selectedTrip.destination}${selectedTrip.country ? `, ${selectedTrip.country}` : ''}`}
       onBack={onBack}
     >
@@ -63,7 +66,7 @@ export function WeatherScreen({
                   <VStack>
                     <Text className="text-[16px] font-black capitalize text-foreground">{day.weekday}</Text>
                     <Text className="text-[12px] font-semibold text-muted-foreground">
-                      {new Date(`${day.date}T12:00:00`).toLocaleDateString('pt-BR', {
+                      {formatAppDate(`${day.date}T12:00:00`, {
                         day: 'numeric',
                         month: 'short'
                       })}

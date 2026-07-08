@@ -1,0 +1,18 @@
+{
+  "generic": "Algo deu errado. Tente novamente.",
+  "network": "Sem conexão. Verifique sua internet.",
+  "INVALID_CREDENTIALS": "E-mail ou senha incorretos.",
+  "UNAUTHENTICATED": "Faça login novamente.",
+  "TRIP_ACCESS_DENIED": "Você não tem acesso a esta viagem.",
+  "TRIP_EDIT_FORBIDDEN": "Seu perfil é somente leitura nesta viagem.",
+  "TRIP_DELETE_FORBIDDEN": "Você não pode excluir esta viagem.",
+  "INVITE_NOT_FOUND": "Convite inválido ou expirado.",
+  "USER_ALREADY_EXISTS": "Este e-mail já está cadastrado. Tente entrar com sua senha.",
+  "MEMBER_NOT_FOUND": "Membro não encontrado nesta viagem.",
+  "OWNER_ROLE_LOCKED": "O papel do dono da viagem não pode ser alterado.",
+  "SOCIAL_AUTH_FAILED": "Não foi possível concluir o login social.",
+  "SOCIAL_TOKEN_INVALID": "Token social inválido. Tente novamente.",
+  "AI_JOB_NOT_FOUND": "Tarefa de IA não encontrada.",
+  "PLACES_PROVIDER_UNAVAILABLE": "Busca de lugares indisponível no momento.",
+  "TILE_UNAVAILABLE": "Mapa indisponível no momento."
+}

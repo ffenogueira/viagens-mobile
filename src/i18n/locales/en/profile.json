@@ -1,0 +1,17 @@
+{
+  "settings": "Settings",
+  "trips": "Trips",
+  "plan": "Plan",
+  "connectedProfile": "Profile connected to workspace",
+  "language": "Language",
+  "languageDesc": "App interface and travel preferences",
+  "languageUpdated": "Language updated",
+  "notifications": "Notifications",
+  "notificationsDesc": "Trip and group alerts",
+  "privacy": "Privacy",
+  "privacyDesc": "Location and consents",
+  "help": "Help",
+  "helpDesc": "Support and FAQ",
+  "logout": "Sign out",
+  "pro": "Pro"
+}

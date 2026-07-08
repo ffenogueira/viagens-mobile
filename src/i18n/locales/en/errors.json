@@ -1,0 +1,18 @@
+{
+  "generic": "Something went wrong. Try again.",
+  "network": "No connection. Check your internet.",
+  "INVALID_CREDENTIALS": "Incorrect email or password.",
+  "UNAUTHENTICATED": "Please sign in again.",
+  "TRIP_ACCESS_DENIED": "You don't have access to this trip.",
+  "TRIP_EDIT_FORBIDDEN": "Your role is read-only on this trip.",
+  "TRIP_DELETE_FORBIDDEN": "You can't delete this trip.",
+  "INVITE_NOT_FOUND": "Invite invalid or expired.",
+  "USER_ALREADY_EXISTS": "This email is already registered. Try signing in with your password.",
+  "MEMBER_NOT_FOUND": "Member not found on this trip.",
+  "OWNER_ROLE_LOCKED": "The trip owner's role can't be changed.",
+  "SOCIAL_AUTH_FAILED": "Social sign-in could not be completed.",
+  "SOCIAL_TOKEN_INVALID": "Invalid social token. Try again.",
+  "AI_JOB_NOT_FOUND": "AI job not found.",
+  "PLACES_PROVIDER_UNAVAILABLE": "Place search is unavailable right now.",
+  "TILE_UNAVAILABLE": "Map is unavailable right now."
+}

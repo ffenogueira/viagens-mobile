@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, TextInput } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { formatAppDateTime } from '../i18n/format'
 import {
   Box,
   Button,
@@ -35,6 +37,7 @@ export function GroupChatScreen({
   user: AuthUser | null
   onBack: () => void
 }) {
+  const { t } = useTranslation('group')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -55,7 +58,7 @@ export function GroupChatScreen({
       setMessages(trip.messages ?? [])
       setMembers(trip.members ?? [])
     } catch (error) {
-      Alert.alert('Chat indisponível', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(t('unavailable'), error instanceof Error ? error.message : t('common:tryAgain'))
     } finally {
       setLoading(false)
     }
@@ -68,7 +71,7 @@ export function GroupChatScreen({
   async function submitMessage() {
     if (!selectedTrip || !draft.trim()) return
     if (viewerOnly) {
-      Alert.alert('Somente leitura', 'Seu convite é de leitor. Peça ao organizador para liberar edição.')
+      Alert.alert(t('readOnlyTitle'), t('readOnlyBody'))
       return
     }
     setSending(true)
@@ -77,7 +80,7 @@ export function GroupChatScreen({
       setMessages((current) => [...current, message])
       setDraft('')
     } catch (error) {
-      Alert.alert('Mensagem não enviada', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(t('messageNotSent'), error instanceof Error ? error.message : t('common:tryAgain'))
     } finally {
       setSending(false)
     }
@@ -90,7 +93,7 @@ export function GroupChatScreen({
       await updateTripMemberRole(selectedTrip.id, member.id, role)
       await loadTrip()
     } catch (error) {
-      Alert.alert('Permissão', error instanceof Error ? error.message : 'Não foi possível atualizar.')
+      Alert.alert(t('permission'), error instanceof Error ? error.message : t('common:couldNotUpdate'))
     } finally {
       setUpdatingMemberId(null)
     }
@@ -99,11 +102,11 @@ export function GroupChatScreen({
   function openRolePicker(member: TripMember) {
     if (!manager || member.role === 'OWNER' || member.user.id === currentUserId) return
 
-    Alert.alert(`Permissão de ${member.user.name}`, 'Escolha o nível de acesso na viagem.', [
-      { text: 'Leitor', onPress: () => void applyMemberRole(member, 'VIEWER') },
-      { text: 'Editor', onPress: () => void applyMemberRole(member, 'MEMBER') },
-      { text: 'Admin', onPress: () => void applyMemberRole(member, 'ORGANIZER') },
-      { text: 'Cancelar', style: 'cancel' }
+    Alert.alert(t('permissionOf', { name: member.user.name }), t('chooseAccess'), [
+      { text: t('roleViewer'), onPress: () => void applyMemberRole(member, 'VIEWER') },
+      { text: t('roleEditor'), onPress: () => void applyMemberRole(member, 'MEMBER') },
+      { text: t('roleAdmin'), onPress: () => void applyMemberRole(member, 'ORGANIZER') },
+      { text: t('common:cancel'), style: 'cancel' }
     ])
   }
 
@@ -116,11 +119,11 @@ export function GroupChatScreen({
   return (
     <>
       <OverlayScreenLayout
-        title="Chat do grupo"
+        title={t('title')}
         subtitle={
           membersCount > 1
-            ? `${membersCount} pessoas nesta viagem`
-            : 'Convide amigos para combinar roteiro, gastos e avisos juntos.'
+            ? t('subtitleMulti', { count: membersCount })
+            : t('subtitleSolo')
         }
         onBack={onBack}
       >
@@ -132,7 +135,7 @@ export function GroupChatScreen({
               <HStack className="items-center justify-between">
                 <VStack>
                   <Text className="text-[11px] font-black uppercase tracking-[1.4px] text-muted-foreground">
-                    Grupo da viagem
+                    {t('tripGroup')}
                   </Text>
                   <Text className="mt-1 text-[18px] font-black text-foreground">{selectedTrip.destination}</Text>
                 </VStack>
@@ -173,7 +176,7 @@ export function GroupChatScreen({
                   })
                 ) : (
                   <Text className="text-[14px] font-semibold text-muted-foreground">
-                    Você é o primeiro por aqui. Convide quem vai viajar com você.
+                    {t('firstMember')}
                   </Text>
                 )}
               </VStack>
@@ -184,28 +187,28 @@ export function GroupChatScreen({
                   className="mt-4 h-12 flex-row items-center justify-center gap-2 rounded-full bg-primary"
                 >
                   <Ionicons color={colors.white} name="person-add-outline" size={18} />
-                  <Text className="text-[15px] font-black text-white">Convidar amigos</Text>
+                  <Text className="text-[15px] font-black text-white">{t('inviteFriends')}</Text>
                 </Pressable>
               ) : (
                 <Box className="mt-4 rounded-2xl bg-[#F8FAFC] px-4 py-3">
                   <Text className="text-[13px] font-semibold leading-5 text-muted-foreground">
-                    Somente organizadores podem enviar novos convites.
+                    {t('onlyOrganizers')}
                   </Text>
                 </Box>
               )}
 
               <Text className="mt-3 text-center text-[12px] font-semibold leading-5 text-muted-foreground">
-                Quem receber o link precisa baixar o app, criar conta e aceitar o convite para entrar na viagem.
+                {t('inviteHint')}
               </Text>
             </Box>
 
             <VStack className="gap-3">
               <Text className="text-[11px] font-black uppercase tracking-[1.4px] text-muted-foreground">
-                Mensagens
+                {t('messages')}
               </Text>
               {messages.length === 0 ? (
                 <Text className="text-sm font-semibold text-muted-foreground">
-                  Nenhuma mensagem ainda. Combine horários, dicas e avisos aqui.
+                  {t('noMessages')}
                 </Text>
               ) : (
                 messages.map((message) => (
@@ -213,12 +216,7 @@ export function GroupChatScreen({
                     <Text className="text-[12px] font-black text-primary">{message.user.name}</Text>
                     <Text className="mt-1 text-[15px] font-semibold leading-6 text-foreground">{message.body}</Text>
                     <Text className="mt-2 text-[11px] font-semibold text-muted-foreground">
-                      {new Date(message.createdAt).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatAppDateTime(message.createdAt)}
                     </Text>
                   </Box>
                 ))
@@ -229,9 +227,7 @@ export function GroupChatScreen({
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
-                placeholder={
-                  viewerOnly ? 'Você pode ler o chat, mas não enviar mensagens' : 'Aviso, dica ou combinado do grupo'
-                }
+                placeholder={viewerOnly ? t('placeholderViewer') : t('placeholder')}
                 placeholderTextColor={colors.muted}
                 multiline
                 editable={!viewerOnly}
@@ -242,7 +238,7 @@ export function GroupChatScreen({
                 onPress={submitMessage}
                 disabled={sending || viewerOnly}
               >
-                {sending ? <ButtonSpinner color="#FFF" /> : <ButtonText className="font-black text-white">Enviar</ButtonText>}
+                {sending ? <ButtonSpinner color="#FFF" /> : <ButtonText className="font-black text-white">{t('common:send')}</ButtonText>}
               </Button>
             </Box>
           </VStack>

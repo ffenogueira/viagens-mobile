@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import React, { useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
@@ -11,6 +11,7 @@ import {
   View
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
 import { BrandMark } from '../components/BrandMark'
 import { colors } from '../theme'
@@ -31,59 +32,60 @@ type Slide = {
   }>
 }
 
-const slides: Slide[] = [
-  {
-    id: 'intent',
-    label: '01 / Antes',
-    title: 'Planeje sem travar.',
-    subtitle:
-      'Salvou um destino, viu um vídeo ou recebeu uma dica? O app transforma essa vontade em um plano simples de seguir.',
-    image:
-      'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1400&q=88',
-    icon: 'sparkles-outline',
-    benefits: [
-      { icon: 'map-outline', text: 'Roteiro por dia, com ajuda da FEFAI' },
-      { icon: 'wallet-outline', text: 'Orçamento estimado antes de comprar' },
-      { icon: 'document-text-outline', text: 'Checklist de documentos e reservas' }
-    ]
-  },
-  {
-    id: 'live',
-    label: '02 / Durante',
-    title: 'Viaje com o grupo no controle.',
-    subtitle:
-      'Na hora da viagem, todo mundo vê o plano, divide contas, combina pontos de encontro e evita perder informação no chat.',
-    image:
-      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=88',
-    icon: 'people-outline',
-    benefits: [
-      { icon: 'location-outline', text: 'Check-in e localização com consentimento' },
-      { icon: 'scan-outline', text: 'Câmera lê preço, recibo e converte moeda' },
-      { icon: 'receipt-outline', text: 'Gastos entram no grupo e dividem automático' }
-    ]
-  },
-  {
-    id: 'memory',
-    label: '03 / Memória',
-    title: 'Depois, a viagem continua viva.',
-    subtitle:
-      'As fotos, lugares, gastos e histórias viram um álbum organizado para guardar, rever e compartilhar sem perder qualidade.',
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=88',
-    icon: 'images-outline',
-    benefits: [
-      { icon: 'images-outline', text: 'Álbum do grupo em qualidade original' },
-      { icon: 'person-circle-outline', text: 'Buscar fotos onde você aparece' },
-      { icon: 'ribbon-outline', text: 'Mapa vivido, retrospectiva e broches' }
-    ]
-  }
-]
-
 export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
+  const { t } = useTranslation('onboarding')
   const insets = useSafeAreaInsets()
   const listRef = useRef<Animated.FlatList<Slide>>(null)
   const scrollX = useRef(new Animated.Value(0)).current
   const [index, setIndex] = useState(0)
+
+  const slides: Slide[] = useMemo(
+    () => [
+      {
+        id: 'intent',
+        label: t('slide1Label'),
+        title: t('slide1Title'),
+        subtitle: t('slide1Subtitle'),
+        image:
+          'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1400&q=88',
+        icon: 'sparkles-outline',
+        benefits: [
+          { icon: 'map-outline', text: t('slide1Benefit1') },
+          { icon: 'wallet-outline', text: t('slide1Benefit2') },
+          { icon: 'document-text-outline', text: t('slide1Benefit3') }
+        ]
+      },
+      {
+        id: 'live',
+        label: t('slide2Label'),
+        title: t('slide2Title'),
+        subtitle: t('slide2Subtitle'),
+        image:
+          'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=88',
+        icon: 'people-outline',
+        benefits: [
+          { icon: 'location-outline', text: t('slide2Benefit1') },
+          { icon: 'scan-outline', text: t('slide2Benefit2') },
+          { icon: 'receipt-outline', text: t('slide2Benefit3') }
+        ]
+      },
+      {
+        id: 'memory',
+        label: t('slide3Label'),
+        title: t('slide3Title'),
+        subtitle: t('slide3Subtitle'),
+        image:
+          'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=88',
+        icon: 'images-outline',
+        benefits: [
+          { icon: 'images-outline', text: t('slide3Benefit1') },
+          { icon: 'person-circle-outline', text: t('slide3Benefit2') },
+          { icon: 'ribbon-outline', text: t('slide3Benefit3') }
+        ]
+      }
+    ],
+    [t]
+  )
 
   function goNext() {
     if (index === slides.length - 1) {
@@ -146,7 +148,7 @@ export function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
         <HStack className="items-center justify-between">
           <BrandMark variant="light" size="sm" />
           <Pressable onPress={onComplete} className="rounded-full bg-white/20 px-4 py-2">
-            <Text className="text-[13px] font-black text-white">Pular</Text>
+            <Text className="text-[13px] font-black text-white">{t('skip')}</Text>
           </Pressable>
         </HStack>
       </VStack>

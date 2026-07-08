@@ -1,37 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Modal, Share } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { createTripInvite } from '../api/client'
 import { buildInviteShareMessage, inviteRoleLabel } from '../lib/tripInvite'
 import { colors } from '../theme'
 import type { InvitePermissionLevel, Trip } from '../types/trip'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
-
-const PERMISSION_OPTIONS: Array<{
-  id: InvitePermissionLevel
-  title: string
-  description: string
-  icon: keyof typeof Ionicons.glyphMap
-}> = [
-  {
-    id: 'viewer',
-    title: 'Leitor',
-    description: 'Vê roteiro, gastos e chat sem editar',
-    icon: 'eye-outline'
-  },
-  {
-    id: 'editor',
-    title: 'Editor',
-    description: 'Edita roteiro, checklist, gastos e mensagens',
-    icon: 'create-outline'
-  },
-  {
-    id: 'admin',
-    title: 'Admin',
-    description: 'Edita tudo e convida outras pessoas',
-    icon: 'shield-checkmark-outline'
-  }
-]
 
 export function TripInviteSheet({
   visible,
@@ -42,8 +17,34 @@ export function TripInviteSheet({
   trip: Trip | null
   onClose: () => void
 }) {
+  const { t } = useTranslation('invite')
   const [permission, setPermission] = useState<InvitePermissionLevel>('editor')
   const [sharing, setSharing] = useState(false)
+
+  const permissionOptions = useMemo(
+    () =>
+      [
+        {
+          id: 'viewer' as const,
+          title: t('viewerTitle'),
+          description: t('viewerDesc'),
+          icon: 'eye-outline' as const
+        },
+        {
+          id: 'editor' as const,
+          title: t('editorTitle'),
+          description: t('editorDesc'),
+          icon: 'create-outline' as const
+        },
+        {
+          id: 'admin' as const,
+          title: t('adminTitle'),
+          description: t('adminDesc'),
+          icon: 'shield-checkmark-outline' as const
+        }
+      ] as const,
+    [t]
+  )
 
   async function handleShare() {
     if (!trip) return
@@ -51,7 +52,7 @@ export function TripInviteSheet({
     try {
       const token = await createTripInvite(trip.id, permission)
       if (!token) {
-        throw new Error('Não foi possível gerar o convite.')
+        throw new Error(t('generateFailed'))
       }
       await Share.share({
         message: buildInviteShareMessage({
@@ -62,7 +63,7 @@ export function TripInviteSheet({
       })
       onClose()
     } catch (error) {
-      Alert.alert('Convite', error instanceof Error ? error.message : 'Não foi possível compartilhar.')
+      Alert.alert(t('inviteAlert'), error instanceof Error ? error.message : t('shareFailed'))
     } finally {
       setSharing(false)
     }
@@ -73,13 +74,15 @@ export function TripInviteSheet({
       <Box className="flex-1 justify-end bg-black/35">
         <Box className="rounded-t-[32px] bg-white px-5 pb-8 pt-4">
           <Box className="mb-5 h-1.5 w-16 self-center rounded-full bg-[#D1D5DB]" />
-          <Text className="text-[24px] font-black text-foreground">Convidar para a viagem</Text>
+          <Text className="text-[24px] font-black text-foreground">{t('sheetTitle')}</Text>
           <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
-            A pessoa precisa baixar o app, criar conta e abrir o link para entrar em {trip?.destination ?? 'sua viagem'}.
+            {t('sheetSubtitle', {
+              destination: trip?.destination ?? t('sheetSubtitleFallback')
+            })}
           </Text>
 
           <VStack className="mt-5 gap-3">
-            {PERMISSION_OPTIONS.map((option) => {
+            {permissionOptions.map((option) => {
               const active = permission === option.id
               return (
                 <Pressable
@@ -108,7 +111,7 @@ export function TripInviteSheet({
 
           <Box className="mt-4 rounded-2xl bg-[#F8FAFC] px-4 py-3">
             <Text className="text-[12px] font-semibold leading-5 text-muted-foreground">
-              Permissão escolhida: {inviteRoleLabel(permission)}
+              {t('chosenPermission', { role: inviteRoleLabel(permission) })}
             </Text>
           </Box>
 
@@ -120,12 +123,12 @@ export function TripInviteSheet({
             {sharing ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text className="text-[16px] font-black text-white">Gerar link e compartilhar</Text>
+              <Text className="text-[16px] font-black text-white">{t('shareLink')}</Text>
             )}
           </Pressable>
 
           <Pressable onPress={onClose} className="mt-4 items-center">
-            <Text className="text-[14px] font-bold text-muted-foreground">Cancelar</Text>
+            <Text className="text-[14px] font-bold text-muted-foreground">{t('common:cancel')}</Text>
           </Pressable>
         </Box>
       </Box>

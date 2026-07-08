@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import * as Location from 'expo-location'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Linking, ScrollView } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Button,
@@ -25,6 +26,7 @@ type UtilityView = 'hub' | 'toilets' | 'luggage' | 'currency' | 'street'
 const WEB_BASE = 'https://viagens.upyouridea.com.br'
 
 export function UtilitiesScreen() {
+  const { t } = useTranslation('utilities')
   const [view, setView] = useState<UtilityView>('hub')
 
   if (view !== 'hub') {
@@ -32,7 +34,7 @@ export function UtilitiesScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
         <Pressable onPress={() => setView('hub')} className="mb-4 flex-row items-center gap-2">
           <Ionicons color={colors.primary} name="arrow-back" size={20} />
-          <Text className="text-sm font-black text-primary">Voltar</Text>
+          <Text className="text-sm font-black text-primary">{t('common:back', { defaultValue: 'Voltar' })}</Text>
         </Pressable>
         {view === 'toilets' && <ToiletsPanel />}
         {view === 'luggage' && <LuggagePanel />}
@@ -45,29 +47,29 @@ export function UtilitiesScreen() {
   const cards = [
     {
       id: 'toilets' as const,
-      title: 'Banheiros públicos',
-      subtitle: 'Mapa e lista perto de você',
+      title: t('toiletsTitle'),
+      subtitle: t('toiletsSubtitle'),
       icon: 'water-outline' as const,
       color: colors.primary
     },
     {
       id: 'luggage' as const,
-      title: 'Guardar mala',
-      subtitle: 'Parceiros Radical Storage e Bounce',
+      title: t('luggageTitle'),
+      subtitle: t('luggageSubtitle'),
       icon: 'briefcase-outline' as const,
       color: colors.sky
     },
     {
       id: 'currency' as const,
-      title: 'Conversor de moeda',
-      subtitle: 'Converta na hora durante a viagem',
+      title: t('currencyTitle'),
+      subtitle: t('currencySubtitle'),
       icon: 'cash-outline' as const,
       color: colors.mint
     },
     {
       id: 'street' as const,
-      title: 'Street View',
-      subtitle: 'Explore a cidade antes de ir',
+      title: t('streetTitle'),
+      subtitle: t('streetSubtitle'),
       icon: 'navigate-outline' as const,
       color: colors.orange
     }
@@ -76,9 +78,9 @@ export function UtilitiesScreen() {
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
       <SectionTitle
-        kicker="Utilidades"
-        title="Ferramentas de viagem"
-        subtitle="Banheiros, bagagem, moeda e exploração — no bolso."
+        kicker={t('kicker')}
+        title={t('title')}
+        subtitle={t('subtitle')}
       />
 
       <VStack className="gap-3">
@@ -110,13 +112,14 @@ export function UtilitiesScreen() {
         onPress={() => Linking.openURL(`${WEB_BASE}/utilities`)}
         className="mt-5 items-center rounded-2xl bg-viagens-lilac px-4 py-3"
       >
-        <Text className="text-sm font-black text-primary">Abrir versão completa no site</Text>
+        <Text className="text-sm font-black text-primary">{t('openFullSite')}</Text>
       </Pressable>
     </ScrollView>
   )
 }
 
 function ToiletsPanel() {
+  const { t } = useTranslation('utilities')
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState<ToiletPlace[]>([])
   const [error, setError] = useState('')
@@ -127,7 +130,7 @@ function ToiletsPanel() {
     try {
       const permission = await Location.requestForegroundPermissionsAsync()
       if (permission.status !== 'granted') {
-        setError('Permita a localização para buscar banheiros perto de você.')
+        setError(t('locationDenied'))
         setLoading(false)
         return
       }
@@ -135,7 +138,7 @@ function ToiletsPanel() {
       const toilets = await fetchNearbyToilets(coords.coords.latitude, coords.coords.longitude)
       setItems(toilets)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível buscar banheiros.')
+      setError(err instanceof Error ? err.message : t('toiletsLoadError'))
     } finally {
       setLoading(false)
     }
@@ -147,8 +150,8 @@ function ToiletsPanel() {
 
   return (
     <VStack>
-      <Text className="text-2xl font-black text-foreground">Banheiros públicos</Text>
-      <Text className="mt-1 text-sm font-semibold text-muted-foreground">Raio 2,5 km · dados OpenStreetMap</Text>
+      <Text className="text-2xl font-black text-foreground">{t('toiletsTitle')}</Text>
+      <Text className="mt-1 text-sm font-semibold text-muted-foreground">{t('toiletsRadius')}</Text>
       {loading ? (
         <ActivityIndicator color={colors.primary} className="my-8" />
       ) : error ? (
@@ -156,7 +159,7 @@ function ToiletsPanel() {
       ) : (
         <VStack className="mt-4 gap-3">
           {items.length === 0 ? (
-            <Text className="text-sm text-muted-foreground">Nenhum banheiro encontrado nesta área.</Text>
+            <Text className="text-sm text-muted-foreground">{t('noToilets')}</Text>
           ) : (
             items.slice(0, 15).map((toilet) => (
               <Pressable
@@ -186,13 +189,14 @@ function ToiletsPanel() {
         </VStack>
       )}
       <Button className="mt-4 rounded-full bg-primary" onPress={load}>
-        <ButtonText className="font-black text-white">Atualizar</ButtonText>
+        <ButtonText className="font-black text-white">{t('refresh')}</ButtonText>
       </Button>
     </VStack>
   )
 }
 
 function LuggagePanel() {
+  const { t } = useTranslation('utilities')
   const [loading, setLoading] = useState(true)
   const [cities, setCities] = useState<LuggageCity[]>([])
   const [nearest, setNearest] = useState<LuggageCity | null>(null)
@@ -225,18 +229,18 @@ function LuggagePanel() {
 
   return (
     <VStack>
-      <Text className="text-2xl font-black text-foreground">Guardar mala</Text>
+      <Text className="text-2xl font-black text-foreground">{t('luggageHeading')}</Text>
       <Text className="mt-1 text-sm font-semibold text-muted-foreground">
-        Reserva e pagamento no site do parceiro.
+        {t('common:partnerPayment')}
       </Text>
       <Box className="mt-3 rounded-2xl border border-[#EDE9FE] bg-viagens-lilac px-4 py-3">
         <Text className="text-[13px] font-semibold leading-5 text-primary">
-          Radical Storage: 12% off com cupom <Text className="font-black">{coupon}</Text>
+          {t('radicalCoupon', { coupon })}
         </Text>
       </Box>
       {nearest ? (
         <Box className="mt-4 rounded-2xl border border-purple-200 bg-viagens-lilac p-4">
-          <Text className="text-xs font-black uppercase text-primary">Mais perto de você</Text>
+          <Text className="text-xs font-black uppercase text-primary">{t('nearestLabel')}</Text>
           <Text className="mt-1 text-xl font-black text-foreground">{nearest.name}</Text>
           <HStack className="mt-3 gap-2">
             <Button
@@ -244,14 +248,14 @@ function LuggagePanel() {
               className="rounded-xl bg-sky-500"
               onPress={() => Linking.openURL(nearest.links.radical_storage)}
             >
-              <ButtonText className="text-white">Radical · cupom {coupon}</ButtonText>
+              <ButtonText className="text-white">{t('radicalCta', { coupon })}</ButtonText>
             </Button>
             <Button
               size="sm"
               className="rounded-xl bg-emerald-500"
               onPress={() => Linking.openURL(nearest.links.bounce)}
             >
-              <ButtonText className="text-white">Bounce</ButtonText>
+              <ButtonText className="text-white">{t('bounceCta')}</ButtonText>
             </Button>
           </HStack>
         </Box>
@@ -263,10 +267,10 @@ function LuggagePanel() {
             <Text className="text-sm text-muted-foreground">{city.country}</Text>
             <HStack className="mt-3 gap-2">
               <Pressable onPress={() => Linking.openURL(city.links.radical_storage)}>
-                <Text className="text-xs font-black text-sky-600">Radical · {coupon} ↗</Text>
+                <Text className="text-xs font-black text-sky-600">{t('radicalCta', { coupon })} ↗</Text>
               </Pressable>
               <Pressable onPress={() => Linking.openURL(city.links.bounce)}>
-                <Text className="text-xs font-black text-emerald-600">Bounce ↗</Text>
+                <Text className="text-xs font-black text-emerald-600">{t('bounceCta')} ↗</Text>
               </Pressable>
             </HStack>
           </Box>
@@ -277,6 +281,7 @@ function LuggagePanel() {
 }
 
 function CurrencyPanel() {
+  const { t } = useTranslation('utilities')
   const [amount, setAmount] = useState('100')
   const [from, setFrom] = useState('BRL')
   const [to, setTo] = useState('EUR')
@@ -312,12 +317,12 @@ function CurrencyPanel() {
 
   return (
     <VStack>
-      <Text className="text-2xl font-black text-foreground">Conversor de moeda</Text>
-      <Text className="mt-1 text-sm font-semibold text-muted-foreground">Cotação aproximada do dia</Text>
+      <Text className="text-2xl font-black text-foreground">{t('currencyHeading')}</Text>
+      <Text className="mt-1 text-sm font-semibold text-muted-foreground">{t('currencyHint')}</Text>
       <Box className="mt-4 rounded-2xl border border-[#EEF2FF] bg-white p-4" style={shadow}>
-        <Text className="text-sm font-black text-foreground">Valor</Text>
+        <Text className="text-sm font-black text-foreground">{t('value')}</Text>
         <Text className="mt-2 text-3xl font-black text-primary">{amount || '0'} {from}</Text>
-        <Text className="mt-4 text-sm font-black text-foreground">Resultado</Text>
+        <Text className="mt-4 text-sm font-black text-foreground">{t('result')}</Text>
         <Text className="mt-1 text-2xl font-black text-foreground">
           {loading ? '...' : `${result} ${to}`}
         </Text>
@@ -327,7 +332,7 @@ function CurrencyPanel() {
           </Text>
         ) : null}
       </Box>
-      <Text className="mb-2 mt-4 text-xs font-black uppercase text-muted-foreground">Pares rápidos</Text>
+      <Text className="mb-2 mt-4 text-xs font-black uppercase text-muted-foreground">{t('quickPairs')}</Text>
       <HStack className="flex-wrap gap-2">
         {pairs.map(([a, b]) => (
           <Pressable
@@ -345,13 +350,14 @@ function CurrencyPanel() {
         ))}
       </HStack>
       <Button className="mt-4 rounded-full bg-primary" onPress={convert}>
-        <ButtonText className="font-black text-white">Atualizar cotação</ButtonText>
+        <ButtonText className="font-black text-white">{t('updateRate')}</ButtonText>
       </Button>
     </VStack>
   )
 }
 
 function StreetViewPanel() {
+  const { t } = useTranslation('utilities')
   const places = [
     { name: 'Rio de Janeiro', query: 'Copacabana, Rio de Janeiro' },
     { name: 'Lisboa', query: 'Praça do Comércio, Lisboa' },
@@ -361,9 +367,9 @@ function StreetViewPanel() {
 
   return (
     <VStack>
-      <Text className="text-2xl font-black text-foreground">Street View</Text>
+      <Text className="text-2xl font-black text-foreground">{t('streetTitle')}</Text>
       <Text className="mt-1 text-sm font-semibold text-muted-foreground">
-        Explore ruas e pontos turísticos antes de ir.
+        {t('streetExploreSubtitle')}
       </Text>
       <VStack className="mt-4 gap-3">
         {places.map((place) => (
@@ -380,7 +386,7 @@ function StreetViewPanel() {
             <HStack className="items-center justify-between">
               <VStack>
                 <Text className="font-black text-foreground">{place.name}</Text>
-                <Text className="text-sm text-muted-foreground">Abrir no Google Maps</Text>
+                <Text className="text-sm text-muted-foreground">{t('openGoogleMaps')}</Text>
               </VStack>
               <Ionicons color={colors.orange} name="navigate" size={22} />
             </HStack>
@@ -391,7 +397,7 @@ function StreetViewPanel() {
         onPress={() => Linking.openURL(`${WEB_BASE}/#street-view`)}
         className="mt-4 items-center rounded-2xl bg-viagens-lilac px-4 py-3"
       >
-        <Text className="text-sm font-black text-primary">Ver mais cidades no site</Text>
+        <Text className="text-sm font-black text-primary">{t('moreCitiesOnSite')}</Text>
       </Pressable>
     </VStack>
   )

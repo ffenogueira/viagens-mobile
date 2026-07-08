@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, TextInput } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   HStack,
@@ -9,6 +10,7 @@ import {
 } from '../../components/ui'
 import { fetchExpenseBalances, fetchTrip } from '../api/client'
 import { EmptyTripNotice, OverlayScreenLayout } from '../components/OverlayScreenLayout'
+import { formatAppNumber } from '../i18n/format'
 import { colors, shadow } from '../theme'
 import type { ExpenseBalance, Trip } from '../types/trip'
 
@@ -19,6 +21,7 @@ export function BillSplitScreen({
   selectedTrip: Trip | null
   onBack: () => void
 }) {
+  const { t } = useTranslation('expenses')
   const [loading, setLoading] = useState(true)
   const [balances, setBalances] = useState<ExpenseBalance[]>([])
   const [members, setMembers] = useState<Record<string, string>>({})
@@ -45,7 +48,7 @@ export function BillSplitScreen({
         setBalances(
           balanceRows.map((row) => ({
             ...row,
-            name: names[row.userId] ?? 'Viajante'
+            name: names[row.userId] ?? t('common:traveler')
           }))
         )
         setPeopleCount(String(Math.max(trip.members?.length ?? 2, 2)))
@@ -53,7 +56,7 @@ export function BillSplitScreen({
         setLoading(false)
       }
     })()
-  }, [selectedTrip?.id])
+  }, [selectedTrip?.id, t])
 
   const quickSplit = useMemo(() => {
     const total = Number(billTotal.replace(',', '.')) || 0
@@ -71,8 +74,8 @@ export function BillSplitScreen({
 
   return (
     <OverlayScreenLayout
-      title="Dividir contas"
-      subtitle="Saldo do grupo e calculadora rápida para rachar uma conta na hora"
+      title={t('billSplitTitle')}
+      subtitle={t('billSplitSubtitle')}
       onBack={onBack}
     >
       {loading ? (
@@ -81,11 +84,11 @@ export function BillSplitScreen({
         <VStack className="gap-4">
           <Box className="rounded-[28px] border border-[#EEF2FF] bg-white p-5" style={shadow}>
             <Text className="text-[12px] font-black uppercase tracking-[1.4px] text-muted-foreground">
-              Calculadora rápida
+              {t('quickCalc')}
             </Text>
             <HStack className="mt-4 gap-3">
               <VStack className="flex-1">
-                <Text className="mb-2 text-xs font-black uppercase text-muted-foreground">Total da conta</Text>
+                <Text className="mb-2 text-xs font-black uppercase text-muted-foreground">{t('billTotal')}</Text>
                 <TextInput
                   value={billTotal}
                   onChangeText={setBillTotal}
@@ -96,7 +99,7 @@ export function BillSplitScreen({
                 />
               </VStack>
               <VStack className="w-24">
-                <Text className="mb-2 text-xs font-black uppercase text-muted-foreground">Pessoas</Text>
+                <Text className="mb-2 text-xs font-black uppercase text-muted-foreground">{t('people')}</Text>
                 <TextInput
                   value={peopleCount}
                   onChangeText={setPeopleCount}
@@ -108,9 +111,9 @@ export function BillSplitScreen({
               </VStack>
             </HStack>
             <Box className="mt-4 rounded-2xl bg-viagens-lilac px-4 py-4">
-              <Text className="text-[12px] font-black uppercase text-primary">Cada um paga</Text>
+              <Text className="text-[12px] font-black uppercase text-primary">{t('eachPays')}</Text>
               <Text className="mt-1 text-[28px] font-black text-primary">
-                {quickSplit.each.toLocaleString('pt-BR', {
+                {formatAppNumber(quickSplit.each, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2
                 })}{' '}
@@ -119,10 +122,10 @@ export function BillSplitScreen({
             </Box>
           </Box>
 
-          <Text className="text-[18px] font-black text-foreground">Saldo do grupo</Text>
+          <Text className="text-[18px] font-black text-foreground">{t('groupBalance')}</Text>
           {balances.length === 0 ? (
             <Text className="text-sm font-semibold text-muted-foreground">
-              Registre gastos no controle de gastos para ver quem deve para quem.
+              {t('balanceEmpty')}
             </Text>
           ) : (
             balances.map((balance) => {
@@ -136,15 +139,15 @@ export function BillSplitScreen({
                       </Box>
                       <VStack>
                         <Text className="text-[16px] font-black text-foreground">
-                          {balance.name ?? members[balance.userId] ?? 'Viajante'}
+                          {balance.name ?? members[balance.userId] ?? t('common:traveler')}
                         </Text>
                         <Text className="text-[12px] font-semibold text-muted-foreground">
-                          {positive ? 'Deve receber' : 'Deve pagar'}
+                          {positive ? t('shouldReceive') : t('shouldPay')}
                         </Text>
                       </VStack>
                     </HStack>
                     <Text className={`text-[16px] font-black ${positive ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {Math.abs(balance.amount).toLocaleString('pt-BR', {
+                      {formatAppNumber(Math.abs(balance.amount), {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                       })}{' '}

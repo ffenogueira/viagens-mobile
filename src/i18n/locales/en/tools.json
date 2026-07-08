@@ -1,0 +1,19 @@
+{
+  "kicker": "Assistant",
+  "title": "AI & tools",
+  "subtitle": "Pick a tab — less text, more action.",
+  "needTripTitle": "Create a trip",
+  "needTripBody": "FEFAI needs an active trip to answer with context.",
+  "unavailable": "FEFAI unavailable",
+  "analyzing": "Analyzing your trip…",
+  "tabFefai": "FEFAI",
+  "tabPrice": "Price",
+  "tabCheckin": "Check-in",
+  "noSuggestions": "No suggestions right now. Try another style.",
+  "suggestFailed": "Could not fetch suggestions.",
+  "placeAdded": "Place added",
+  "placeAddedBody": "Saved on this device. Sync with the server will happen when the API is updated.",
+  "prompt1": "Reorganize my itinerary without blowing the budget?",
+  "prompt2": "Split this bill among the four of us.",
+  "prompt3": "What's missing from the trip checklist?"
+}

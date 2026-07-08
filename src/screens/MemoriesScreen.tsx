@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import React from 'react'
+import React, { useMemo } from 'react'
 import { ScrollView } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   Badge,
   BadgeText,
@@ -14,52 +15,57 @@ import { FeatureRow, SectionTitle } from '../components/shared'
 import { colors, gradients } from '../theme'
 import type { Trip } from '../types/trip'
 
-const memoryFeatures = [
-  {
-    icon: 'cloud-upload-outline' as const,
-    color: colors.primary,
-    title: 'Álbum original',
-    description: 'Fotos sem perder qualidade no envio — qualidade de arquivo, não thumbnail.',
-    badge: 'Qualidade'
-  },
-  {
-    icon: 'person-circle-outline' as const,
-    color: colors.sky,
-    title: 'Encontrar fotos comigo',
-    description: 'Busca visual com consentimento para achar em quais fotos a pessoa aparece.',
-    badge: 'IA'
-  },
-  {
-    icon: 'earth-outline' as const,
-    color: colors.mint,
-    title: 'Passaporte digital',
-    description: 'Broches, mapa vivido e histórico por estado e país visitado.',
-    badge: 'Gamificação'
-  },
-  {
-    icon: 'time-outline' as const,
-    color: colors.orange,
-    title: 'Linha do tempo',
-    description: 'Depois da viagem, veja por onde passou e o que viveu em ordem cronológica.',
-    badge: 'Retrospectiva'
-  },
-  {
-    icon: 'book-outline' as const,
-    color: colors.primaryDark,
-    title: 'Diário de viagem',
-    description: 'Notas, momentos e roteiro vivido transformados em memória organizada.',
-    badge: 'Journal'
-  },
-  {
-    icon: 'share-social-outline' as const,
-    color: '#6366F1',
-    title: 'Guia compartilhável',
-    description: 'Exporte o roteiro vivido para compartilhar com quem vem depois.',
-    badge: 'Social'
-  }
-]
-
 export function MemoriesScreen({ selectedTrip }: { selectedTrip: Trip | null }) {
+  const { t } = useTranslation('memories')
+
+  const memoryFeatures = useMemo(
+    () => [
+      {
+        icon: 'cloud-upload-outline' as const,
+        color: colors.primary,
+        title: t('featureAlbumTitle'),
+        description: t('featureAlbumDescription'),
+        badge: t('featureAlbumBadge')
+      },
+      {
+        icon: 'person-circle-outline' as const,
+        color: colors.sky,
+        title: t('featureFindMeTitle'),
+        description: t('featureFindMeDescription'),
+        badge: t('featureFindMeBadge')
+      },
+      {
+        icon: 'earth-outline' as const,
+        color: colors.mint,
+        title: t('featurePassportTitle'),
+        description: t('featurePassportDescription'),
+        badge: t('featurePassportBadge')
+      },
+      {
+        icon: 'time-outline' as const,
+        color: colors.orange,
+        title: t('featureTimelineTitle'),
+        description: t('featureTimelineDescription'),
+        badge: t('featureTimelineBadge')
+      },
+      {
+        icon: 'book-outline' as const,
+        color: colors.primaryDark,
+        title: t('featureJournalTitle'),
+        description: t('featureJournalDescription'),
+        badge: t('featureJournalBadge')
+      },
+      {
+        icon: 'share-social-outline' as const,
+        color: '#6366F1',
+        title: t('featureGuideTitle'),
+        description: t('featureGuideDescription'),
+        badge: t('featureGuideBadge')
+      }
+    ],
+    [t]
+  )
+
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
       <Box className="mb-6 overflow-hidden rounded-3xl border border-viagens-lilac-deep shadow-soft-2">
@@ -69,30 +75,30 @@ export function MemoriesScreen({ selectedTrip }: { selectedTrip: Trip | null }) 
               <Ionicons color={colors.primary} name="images" size={28} />
             </Box>
             <Badge className="rounded-full bg-white px-3 py-2">
-              <BadgeText className="text-xs font-black text-primary">Pós-viagem</BadgeText>
+              <BadgeText className="text-xs font-black text-primary">{t('badgePostTrip')}</BadgeText>
             </Badge>
           </HStack>
 
           <Text className="text-2xl font-black leading-8 text-foreground">
-            {selectedTrip ? 'Transforme a viagem em ativo' : 'Memórias prontas para sua próxima viagem'}
+            {selectedTrip ? t('titleWithTrip') : t('titleEmpty')}
           </Text>
           <Text className="mt-2 text-sm font-semibold leading-6 text-muted-foreground">
-            Álbum, diário, retrospectiva, roteiro vivido e guia compartilhável — tudo que o grupo viveu, guardado.
+            {t('heroSubtitle')}
           </Text>
 
           {selectedTrip && (
             <HStack className="mt-4 gap-3">
-              <StatPill icon="image-outline" value={String(selectedTrip.photos?.length || 0)} label="Fotos" />
-              <StatPill icon="location-outline" value={selectedTrip.destination} label="Destino" />
+              <StatPill icon="image-outline" value={String(selectedTrip.photos?.length || 0)} label={t('photos')} />
+              <StatPill icon="location-outline" value={selectedTrip.destination} label={t('destination')} />
             </HStack>
           )}
         </LinearGradient>
       </Box>
 
       <SectionTitle
-        kicker="Diferenciais"
-        title="Memórias que valem a pena"
-        subtitle="Funcionalidades pensadas para depois da viagem, não só durante."
+        kicker={t('sectionKicker')}
+        title={t('sectionTitle')}
+        subtitle={t('sectionSubtitle')}
       />
 
       <VStack className="mb-6 gap-3">
@@ -110,9 +116,9 @@ export function MemoriesScreen({ selectedTrip }: { selectedTrip: Trip | null }) 
         >
           <Ionicons color="#FFFFFF" name="sparkles" size={24} />
           <VStack className="flex-1">
-            <Text className="font-black text-white">Retrospectiva com FEFAI</Text>
+            <Text className="font-black text-white">{t('fefaiTitle')}</Text>
             <Text className="mt-1 text-sm font-semibold leading-5 text-white/85">
-              Em breve: resumo automático da viagem com highlights e sugestões de álbum.
+              {t('fefaiSubtitle')}
             </Text>
           </VStack>
         </LinearGradient>

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Modal, ScrollView, TextInput } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Button,
@@ -54,6 +55,7 @@ export function CreateTripSheet({
   onClose,
   onSubmit
 }: CreateTripSheetProps) {
+  const { t } = useTranslation('trip')
   const [destination, setDestination] = useState('')
   const [country, setCountry] = useState('')
   const [description, setDescription] = useState('')
@@ -74,21 +76,21 @@ export function CreateTripSheet({
   function submit() {
     const cleanDestination = (selectedPlace?.name ?? destination.trim())
     if (!cleanDestination || cleanDestination.length < 2) {
-      Alert.alert('Destino obrigatório', 'Escolha a cidade ou destino da viagem.')
+      Alert.alert(t('destinationRequired'), t('destinationRequiredBody'))
       return
     }
     if (!description.trim() || description.trim().length < 8) {
-      Alert.alert('Descrição obrigatória', 'Conte em poucas linhas o objetivo da viagem (mínimo 8 caracteres).')
+      Alert.alert(t('descriptionRequired'), t('descriptionRequiredBody'))
       return
     }
     const startsAt = toIsoDateStart(startDate)
     const endsAt = toIsoDateStart(endDate)
     if (!startsAt || !endsAt) {
-      Alert.alert('Datas obrigatórias', 'Selecione a data de início e de fim da viagem.')
+      Alert.alert(t('datesRequired'), t('datesRequiredBody'))
       return
     }
     if (endDate < startDate) {
-      Alert.alert('Datas inválidas', 'A data de fim deve ser igual ou posterior à data de início.')
+      Alert.alert(t('datesInvalid'), t('datesInvalidBody'))
       return
     }
 
@@ -96,7 +98,7 @@ export function CreateTripSheet({
       destinationName: cleanDestination,
       country: (selectedPlace?.country ?? country.trim()) || undefined,
       countryCode: selectedPlace?.countryCode || undefined,
-      title: `Viagem para ${cleanDestination}`,
+      title: t('tripTitleFor', { destination: cleanDestination }),
       description: description.trim(),
       startsAt,
       endsAt,
@@ -114,9 +116,9 @@ export function CreateTripSheet({
 
           <HStack className="mb-4 items-center justify-between">
             <Pressable onPress={onClose} disabled={loading}>
-              <Text className="text-[16px] font-bold text-muted-foreground">Cancelar</Text>
+              <Text className="text-[16px] font-bold text-muted-foreground">{t('common:cancel')}</Text>
             </Pressable>
-            <Text className="text-[18px] font-black text-foreground">Nova viagem</Text>
+            <Text className="text-[18px] font-black text-foreground">{t('newTrip')}</Text>
             <Box className="w-[70px]" />
           </HStack>
 
@@ -126,16 +128,16 @@ export function CreateTripSheet({
                 <Ionicons color={colors.primary} name="earth" size={38} />
               </Box>
               <Text className="text-center text-[24px] font-black leading-[30px] text-foreground">
-                Para onde vamos, {firstName}?
+                {t('whereHeading', { name: firstName })}
               </Text>
               <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
-                Destino, datas e descrição ajudam a FEFAI a montar um roteiro melhor.
+                {t('whereSubtitle')}
               </Text>
             </VStack>
 
             <VStack className="mt-5 gap-4">
               <DestinationAutocomplete
-                label="Cidade ou destino"
+                label={t('cityOrDestination')}
                 value={destination}
                 onChangeText={(text) => {
                   setDestination(text)
@@ -149,11 +151,11 @@ export function CreateTripSheet({
               />
 
               <VStack className="gap-2">
-                <Text className="text-[13px] font-black text-foreground">Descrição da viagem</Text>
+                <Text className="text-[13px] font-black text-foreground">{t('tripDescription')}</Text>
                 <TextInput
                   value={description}
                   onChangeText={setDescription}
-                  placeholder="Ex.: lua de mel, viagem em família, trabalho + folga..."
+                  placeholder={t('descriptionPlaceholder')}
                   placeholderTextColor="#94A3B8"
                   multiline
                   textAlignVertical="top"
@@ -171,9 +173,9 @@ export function CreateTripSheet({
                 />
               </VStack>
 
-              <BrazilianDateField label="Início" value={startDate} onChange={setStartDate} />
+              <BrazilianDateField label={t('startLabel')} value={startDate} onChange={setStartDate} />
               <BrazilianDateField
-                label="Fim"
+                label={t('endLabel')}
                 value={endDate}
                 onChange={setEndDate}
                 minimumDate={startDate ? new Date(`${startDate}T12:00:00`) : undefined}
@@ -189,7 +191,7 @@ export function CreateTripSheet({
               {loading ? (
                 <ActivityIndicator color={colors.white} size="small" />
               ) : (
-                <ButtonText className="text-[16px] font-black text-white">Criar viagem</ButtonText>
+                <ButtonText className="text-[16px] font-black text-white">{t('createTrip')}</ButtonText>
               )}
             </Button>
           </ScrollView>

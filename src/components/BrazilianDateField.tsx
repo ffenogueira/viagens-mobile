@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { HStack, Pressable, Text, VStack } from '../../components/ui'
-import { formatIsoToBr } from '../lib/dates'
+import { formatAppDate } from '../i18n/format'
 import { colors } from '../theme'
 import { BrazilianCalendarModal } from './BrazilianCalendarModal'
 
@@ -12,9 +13,17 @@ type BrazilianDateFieldProps = {
   minimumDate?: Date
 }
 
+function formatSelectedDate(value?: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}/.test(value)) return null
+  const date = new Date(`${value.slice(0, 10)}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return null
+  return formatAppDate(date, { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 export function BrazilianDateField({ label, value, onChange, minimumDate }: BrazilianDateFieldProps) {
+  const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
-  const display = formatIsoToBr(value) || 'Selecionar data'
+  const display = formatSelectedDate(value) || t('selectDate')
 
   return (
     <VStack className="gap-2">

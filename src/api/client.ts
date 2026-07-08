@@ -1,4 +1,6 @@
 import * as SecureStore from 'expo-secure-store'
+import { getActiveLocale, translateApiError } from '../i18n'
+import type { AppLocale } from '../i18n/types'
 import type {
   ActivitySuggestion,
   ChatMessage,
@@ -31,6 +33,7 @@ export type AuthUser = {
   email: string
   handle?: string | null
   role?: string
+  locale?: string | null
 }
 
 export type AuthSession = {
@@ -277,15 +280,12 @@ function parseApiError(payload: unknown): string {
 
     if (typeof data.error === 'string') {
       if (data.error === 'USER_ALREADY_EXISTS') {
-        return 'Este e-mail já está cadastrado. Tente entrar com sua senha.'
+        return translateApiError('USER_ALREADY_EXISTS', 'Este e-mail já está cadastrado.')
       }
-      if (data.error === 'INVALID_CREDENTIALS') {
-        return 'E-mail ou senha incorretos.'
+      const translated = translateApiError(data.error)
+      if (translated !== data.error || data.error.includes('_')) {
+        return translated
       }
-      if (data.error === 'UNAUTHENTICATED') {
-        return 'Sessão expirada. Entre novamente.'
-      }
-      return data.error
     }
 
     if (typeof data.message === 'string') return data.message
@@ -357,6 +357,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (token) headers.set('Authorization', `Bearer ${token}`)
   }
 
+  headers.set('Accept-Language', getActiveLocale())
+
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers
@@ -384,6 +386,15 @@ export async function fetchProfile(): Promise<AuthUser> {
     throw new Error('Perfil inválido.')
   }
   return user
+}
+
+export async function updateUserLocale(locale: AppLocale): Promise<AuthUser> {
+  const payload = await apiRequest<{ user?: AuthUser }>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify({ locale })
+  })
+  if (payload.user) return payload.user
+  return fetchProfile()
 }
 
 export async function fetchTrips(): Promise<Trip[]> {
@@ -911,7 +922,7 @@ export async function fetchWeatherForecast(destination: string, country?: string
   const days: WeatherDay[] = (forecast.daily?.time ?? []).slice(0, 7).map((date: string, index: number) => {
     const code = Number(forecast.daily.weathercode?.[index] ?? 0)
     const meta = weatherMeta(code)
-    const weekday = new Date(`${date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short' })
+    const weekday = new Date(`${date}T12:00:00`).toLocaleDateString(getActiveLocale(), { weekday: 'short' })
     return {
       date,
       weekday: weekday.replace('.', ''),

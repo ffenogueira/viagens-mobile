@@ -11,6 +11,7 @@ import {
   TextInput
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
 import { BrandMark } from '../components/BrandMark'
 import { SocialLoginButtons } from '../components/SocialLoginButtons'
@@ -74,10 +75,11 @@ function AuthField({
 }
 
 function OrDivider() {
+  const { t } = useTranslation('auth')
   return (
     <HStack className="my-5 items-center gap-3">
       <Box className="h-px flex-1 bg-[#E5E7EB]" />
-      <Text className="text-[13px] font-medium lowercase text-[#9CA3AF]">ou</Text>
+      <Text className="text-[13px] font-medium lowercase text-[#9CA3AF]">{t('orDivider')}</Text>
       <Box className="h-px flex-1 bg-[#E5E7EB]" />
     </HStack>
   )
@@ -99,6 +101,7 @@ export function AuthScreen({
   onSubmit,
   onSocialLogin
 }: AuthScreenProps) {
+  const { t } = useTranslation('auth')
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -116,14 +119,11 @@ export function AuthScreen({
 
   function sendRecovery() {
     if (!email.trim()) {
-      Alert.alert('Informe seu e-mail', 'Digite o e-mail da conta para continuar.')
+      Alert.alert(t('recoveryEmailTitle'), t('recoveryEmailBody'))
       return
     }
 
-    Alert.alert(
-      'Recuperação preparada',
-      'A tela já está pronta. O próximo passo é conectar no endpoint de recuperação de senha.'
-    )
+    Alert.alert(t('recoveryReadyTitle'), t('recoveryReadyBody'))
   }
 
   if (view === 'forgot') {
@@ -150,7 +150,7 @@ export function AuthScreen({
             >
               <Ionicons color={colors.ink} name="arrow-back" size={21} />
             </Pressable>
-            <Text className="text-[16px] font-black text-foreground">Recuperar senha</Text>
+            <Text className="text-[16px] font-black text-foreground">{t('forgotPasswordTitle')}</Text>
             <Box className="h-11 w-11" />
           </HStack>
 
@@ -160,17 +160,17 @@ export function AuthScreen({
             </Box>
 
             <Text className="text-[29px] font-black leading-[35px] text-foreground">
-              Bora recuperar seu acesso?
+              {t('forgotPasswordHeading')}
             </Text>
             <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
-              Coloque seu e-mail e vamos te levar de volta para suas viagens.
+              {t('forgotPasswordSubtitle')}
             </Text>
 
             <VStack className="mt-8 gap-5">
               <AuthField
                 icon="mail-outline"
-                label="E-mail"
-                placeholder="voce@email.com"
+                label={t('email')}
+                placeholder={t('emailPlaceholder')}
                 value={email}
                 onChangeText={onEmailChange}
                 keyboardType="email-address"
@@ -182,7 +182,7 @@ export function AuthScreen({
                 className="h-[52px] items-center justify-center rounded-2xl bg-primary"
                 style={shadow}
               >
-                <Text className="text-[16px] font-black text-white">Enviar</Text>
+                <Text className="text-[16px] font-black text-white">{t('send')}</Text>
               </Pressable>
             </VStack>
           </VStack>
@@ -211,26 +211,24 @@ export function AuthScreen({
         <HStack className="mb-4 items-center justify-between">
           <BrandMark variant="dark" size="sm" showTagline={false} />
           <Box className="rounded-full bg-viagens-lilac px-3 py-1.5">
-            <Text className="text-[11px] font-black text-primary">App de viagem</Text>
+            <Text className="text-[11px] font-black text-primary">{t('appBadge')}</Text>
           </Box>
         </HStack>
 
         {invitePending ? (
           <Box className="mb-4 rounded-[22px] border border-[#EDE9FE] bg-viagens-lilac px-4 py-3">
             <Text className="text-[13px] font-semibold leading-5 text-primary">
-              Você abriu um convite de viagem. Crie sua conta ou entre para aceitar e acessar roteiro, gastos e chat do grupo.
+              {t('inviteBanner')}
             </Text>
           </Box>
         ) : null}
 
         <VStack className="pt-12">
           <Text className="text-[26px] font-black leading-[32px] text-foreground">
-            {isLogin ? 'Entre no seu espaço de viagem.' : 'Crie seu espaço de viagem.'}
+            {isLogin ? t('loginTitle') : t('registerTitle')}
           </Text>
           <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
-            {isLogin
-              ? 'Planeje com IA, viaje em grupo, divida gastos e guarde as memórias em qualidade original.'
-              : 'Monte um workspace para roteiro, grupo, OCR, gastos, fotos e pós-viagem.'}
+            {isLogin ? t('loginSubtitle') : t('registerSubtitle')}
           </Text>
 
           <HStack className="mt-5 flex-wrap gap-2">
@@ -245,8 +243,8 @@ export function AuthScreen({
             {!isLogin && (
               <AuthField
                 icon="person-outline"
-                label="Nome"
-                placeholder="Seu nome"
+                label={t('name')}
+                placeholder={t('namePlaceholder')}
                 value={name}
                 onChangeText={onNameChange}
                 autoCapitalize="words"
@@ -256,8 +254,8 @@ export function AuthScreen({
 
             <AuthField
               icon="mail-outline"
-              label="E-mail"
-              placeholder="voce@email.com"
+              label={t('email')}
+              placeholder={t('emailPlaceholder')}
               value={email}
               onChangeText={onEmailChange}
               keyboardType="email-address"
@@ -267,8 +265,8 @@ export function AuthScreen({
 
             <AuthField
               icon="lock-closed-outline"
-              label="Senha"
-              placeholder="Digite sua senha"
+              label={t('password')}
+              placeholder={t('passwordPlaceholder')}
               value={password}
               onChangeText={onPasswordChange}
               secureTextEntry={!showPassword}
@@ -301,11 +299,11 @@ export function AuthScreen({
                 >
                   {rememberMe && <Ionicons color="#FFFFFF" name="checkmark" size={12} />}
                 </Box>
-                  <Text className="text-[12px] font-semibold text-[#64748B]">Manter conectado</Text>
+                  <Text className="text-[12px] font-semibold text-[#64748B]">{t('rememberMe')}</Text>
               </RNPressable>
 
               <Pressable onPress={() => setView('forgot')}>
-                <Text className="text-[12px] font-black text-primary">Esqueci a senha</Text>
+                <Text className="text-[12px] font-black text-primary">{t('forgotPassword')}</Text>
               </Pressable>
             </HStack>
           )}
@@ -326,7 +324,7 @@ export function AuthScreen({
                 <ActivityIndicator color={colors.white} size="small" />
               ) : (
                 <Text className="text-[15px] font-black text-white">
-                  {isLogin ? 'Continuar' : 'Criar conta'}
+                  {isLogin ? t('continue') : t('register')}
                 </Text>
               )}
             </LinearGradient>
@@ -343,11 +341,11 @@ export function AuthScreen({
 
         <HStack className="mt-12 items-center justify-center">
           <Text className="text-[13px] font-semibold text-muted-foreground">
-            {isLogin ? 'Ainda não tem conta? ' : 'Já tem conta? '}
+            {isLogin ? t('noAccount') : t('hasAccount')}
           </Text>
           <Pressable disabled={busy} onPress={() => onModeChange(isLogin ? 'register' : 'login')}>
             <Text className="text-[13px] font-black text-foreground">
-              {isLogin ? 'Criar conta' : 'Entrar'}
+              {isLogin ? t('register') : t('login')}
             </Text>
           </Pressable>
         </HStack>

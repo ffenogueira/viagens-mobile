@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import React, { useMemo } from 'react'
 import { Linking, Modal, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
 import type { LeafletMapMarker } from '../lib/buildLeafletMapHtml'
 import { buildGoogleMapsUrl } from '../lib/staticMap'
@@ -16,6 +17,7 @@ type TripMapModalProps = {
 }
 
 export function TripMapModal({ visible, markers, destination, onClose }: TripMapModalProps) {
+  const { t } = useTranslation('trip')
   const insets = useSafeAreaInsets()
   const googleMapsUrl = useMemo(() => buildGoogleMapsUrl(markers), [markers])
 
@@ -35,7 +37,7 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
             <Ionicons color={colors.ink} name="close" size={22} />
           </Pressable>
           <Box className="flex-1 px-3">
-            <Text className="text-center text-[18px] font-black text-foreground">Mapa do roteiro</Text>
+            <Text className="text-center text-[18px] font-black text-foreground">{t('mapItineraryTitle')}</Text>
             {destination ? (
               <Text className="mt-0.5 text-center text-[12px] font-semibold text-muted-foreground">{destination}</Text>
             ) : null}
@@ -48,7 +50,9 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
 
           <VStack className="gap-3 px-5 pt-5">
             <Text className="text-[13px] font-semibold text-muted-foreground">
-              {markers.length} {markers.length === 1 ? 'lugar marcado' : 'lugares marcados'} no roteiro
+              {markers.length === 1
+                ? t('markedPlaceSingular', { count: markers.length })
+                : t('markedPlacePlural', { count: markers.length })}
             </Text>
 
             {markers.map((marker) => (
@@ -78,7 +82,7 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
               <Pressable onPress={openExternalMap} className="mt-2 h-14 items-center justify-center rounded-full bg-primary">
                 <HStack className="items-center gap-2">
                   <Ionicons color={colors.white} name="map-outline" size={18} />
-                  <Text className="text-[16px] font-black text-white">Abrir rota no Google Maps</Text>
+                  <Text className="text-[16px] font-black text-white">{t('openGoogleMaps')}</Text>
                 </HStack>
               </Pressable>
             ) : null}

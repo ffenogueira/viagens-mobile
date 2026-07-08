@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Modal, Pressable as RNPressable, View } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
 import { colors, shadowStrong } from '../theme'
 import type { NavigationTarget, Tab } from '../types/trip'
@@ -27,53 +28,58 @@ export function QuickCreateMenu({
   onNavigate,
   onSetTab
 }: QuickCreateMenuProps) {
-  const actions: QuickAction[] = [
-    {
-      icon: 'airplane-outline',
-      label: 'Nova viagem',
-      detail: 'Destino, datas e descrição',
-      onPress: () => {
-        onClose()
-        onCreateTrip()
+  const { t } = useTranslation('common')
+
+  const actions: QuickAction[] = useMemo(
+    () => [
+      {
+        icon: 'airplane-outline',
+        label: t('quickNewTrip'),
+        detail: t('quickNewTripDetail'),
+        onPress: () => {
+          onClose()
+          onCreateTrip()
+        }
+      },
+      {
+        icon: 'sparkles-outline',
+        label: t('quickFefai'),
+        detail: t('quickFefaiDetail'),
+        onPress: () => {
+          onClose()
+          onSetTab('tools')
+        }
+      },
+      {
+        icon: 'wallet-outline',
+        label: t('quickExpenses'),
+        detail: t('quickExpensesDetail'),
+        onPress: () => {
+          onClose()
+          onNavigate('expenses')
+        }
+      },
+      {
+        icon: 'water-outline',
+        label: t('quickToilets'),
+        detail: t('quickToiletsDetail'),
+        onPress: () => {
+          onClose()
+          onSetTab('utilities')
+        }
+      },
+      {
+        icon: 'scan-outline',
+        label: t('quickPrice'),
+        detail: t('quickPriceDetail'),
+        onPress: () => {
+          onClose()
+          onNavigate('tools-camera')
+        }
       }
-    },
-    {
-      icon: 'sparkles-outline',
-      label: 'FEFAI',
-      detail: 'Sugestões e assistente de viagem',
-      onPress: () => {
-        onClose()
-        onSetTab('tools')
-      }
-    },
-    {
-      icon: 'wallet-outline',
-      label: 'Gastos',
-      detail: 'Registrar despesas da viagem',
-      onPress: () => {
-        onClose()
-        onNavigate('expenses')
-      }
-    },
-    {
-      icon: 'water-outline',
-      label: 'Banheiros',
-      detail: 'Utilidades perto de você',
-      onPress: () => {
-        onClose()
-        onSetTab('utilities')
-      }
-    },
-    {
-      icon: 'scan-outline',
-      label: 'Ler preço',
-      detail: 'Câmera e OCR',
-      onPress: () => {
-        onClose()
-        onNavigate('tools-camera')
-      }
-    }
-  ]
+    ],
+    [t, onClose, onCreateTrip, onNavigate, onSetTab]
+  )
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -93,9 +99,9 @@ export function QuickCreateMenu({
             }}
           >
             <View style={{ alignSelf: 'center', width: 48, height: 5, borderRadius: 999, backgroundColor: '#E2E8F0', marginBottom: 16 }} />
-            <Text className="text-[20px] font-black text-foreground">Criar ou acessar</Text>
+            <Text className="text-[20px] font-black text-foreground">{t('quickCreateTitle')}</Text>
             <Text className="mt-1 mb-4 text-[13px] font-semibold text-muted-foreground">
-              Atalhos rápidos como no Instagram
+              {t('quickCreateSubtitle')}
             </Text>
 
             <VStack className="gap-3">
@@ -121,7 +127,7 @@ export function QuickCreateMenu({
             </VStack>
 
             <Pressable onPress={onClose} className="mt-5 items-center rounded-full bg-[#F1F5F9] py-4">
-              <Text className="text-[15px] font-black text-foreground">Fechar</Text>
+              <Text className="text-[15px] font-black text-foreground">{t('close')}</Text>
             </Pressable>
           </View>
         </RNPressable>

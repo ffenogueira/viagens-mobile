@@ -39,6 +39,8 @@ import { TripWorkspaceScreen } from './screens/TripWorkspaceScreen'
 import { UtilitiesScreen } from './screens/UtilitiesScreen'
 import { colors } from './theme'
 import { parseInviteTokenFromUrl } from './lib/tripInvite'
+import { changeAppLocale, initI18n, i18n } from './i18n'
+import type { AppLocale } from './i18n/types'
 import type { NavigationTarget, OverlayScreen, Tab, Trip, TripHomeShortcut, TripToolsPanel } from './types/trip'
 
 const PENDING_INVITE_KEY = 'viagens_pending_invite'
@@ -78,6 +80,12 @@ function AppContent() {
   const [workspaceToolsPanel, setWorkspaceToolsPanel] = useState<TripToolsPanel | null>(null)
   const [inviteToken, setInviteToken] = useState<string | null>(null)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
+  const [i18nReady, setI18nReady] = useState(false)
+
+  async function applyUserLocale(locale?: string | null) {
+    if (!locale) return
+    await changeAppLocale(locale as AppLocale)
+  }
 
   async function persistInviteToken(token: string) {
     await SecureStore.setItemAsync(PENDING_INVITE_KEY, token)
@@ -124,6 +132,9 @@ function AppContent() {
 
   useEffect(() => {
     async function boot() {
+      await initI18n()
+      setI18nReady(true)
+
       const initialUrl = await Linking.getInitialURL()
       await rememberInviteFromUrl(initialUrl)
 
@@ -133,6 +144,7 @@ function AppContent() {
         return
       }
 
+      await applyUserLocale(restored.user.locale)
       setUser(restored.user)
       await loadTrips()
       setSession('authenticated')
@@ -171,17 +183,17 @@ function AppContent() {
     const trimmedName = name.trim()
 
     if (!trimmedEmail || !password) {
-      Alert.alert('Campos obrigatórios', 'Informe e-mail e senha para continuar.')
+      Alert.alert(i18n.t('requiredFieldsTitle', { ns: 'auth' }), i18n.t('requiredFieldsBody', { ns: 'auth' }))
       return
     }
 
     if (mode === 'register' && !trimmedName) {
-      Alert.alert('Nome obrigatório', 'Informe seu nome para criar a conta.')
+      Alert.alert(i18n.t('nameRequiredTitle', { ns: 'auth' }), i18n.t('nameRequiredBody', { ns: 'auth' }))
       return
     }
 
     if (password.length < 8) {
-      Alert.alert('Senha curta', 'Use pelo menos 8 caracteres na senha.')
+      Alert.alert(i18n.t('shortPassword', { ns: 'auth' }), i18n.t('shortPasswordBody', { ns: 'auth' }))
       return
     }
 
@@ -196,6 +208,7 @@ function AppContent() {
       }
 
       setUser(authSession.user)
+      await applyUserLocale(authSession.user.locale)
       try {
         await loadTrips()
       } catch {
@@ -205,7 +218,10 @@ function AppContent() {
       setSession('authenticated')
       await resumePendingInvite()
     } catch (error) {
-      Alert.alert('Acesso não concluído', error instanceof Error ? error.message : 'Confira seus dados e tente novamente.')
+      Alert.alert(
+        i18n.t('authFailed', { ns: 'auth' }),
+        error instanceof Error ? error.message : i18n.t('authFailedBody', { ns: 'auth' })
+      )
     } finally {
       setLoading(false)
     }
@@ -223,6 +239,7 @@ function AppContent() {
       }
 
       setUser(authSession.user)
+      await applyUserLocale(authSession.user.locale)
       try {
         await loadTrips()
       } catch {
@@ -238,15 +255,17 @@ function AppContent() {
 
       if (error instanceof SocialAuthNotConfiguredError || error instanceof SocialAuthNativeModuleError) {
         Alert.alert(
-          error instanceof SocialAuthNativeModuleError ? 'Atualize o app' : 'Login social em configuração',
+          error instanceof SocialAuthNativeModuleError
+            ? i18n.t('socialUpdateApp', { ns: 'auth' })
+            : i18n.t('socialConfiguring', { ns: 'auth' }),
           error.message
         )
         return
       }
 
       Alert.alert(
-        'Acesso social não concluído',
-        error instanceof Error ? error.message : 'Tente novamente em instantes.'
+        i18n.t('socialFailed', { ns: 'auth' }),
+        error instanceof Error ? error.message : i18n.t('socialFailedBody', { ns: 'auth' })
       )
     } finally {
       setSocialLoading(false)
@@ -271,7 +290,10 @@ function AppContent() {
       setFocusTripId(trip.id)
       setTab('today')
     } catch (error) {
-      Alert.alert('Viagem não criada', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(
+        i18n.t('tripNotCreated', { ns: 'trip' }),
+        error instanceof Error ? error.message : i18n.t('generic', { ns: 'errors' })
+      )
     } finally {
       setLoading(false)
     }
@@ -384,7 +406,7 @@ function AppContent() {
     closeOverlay()
   }
 
-  if (session === 'loading') {
+  if (session === 'loading' || !i18nReady) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-background">
         <StatusBar barStyle="dark-content" backgroundColor={colors.background} />

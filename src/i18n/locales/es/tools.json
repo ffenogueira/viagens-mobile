@@ -1,0 +1,19 @@
+{
+  "kicker": "Asistente",
+  "title": "IA y herramientas",
+  "subtitle": "Elige una pestaña — menos texto, más acción.",
+  "needTripTitle": "Crea un viaje",
+  "needTripBody": "FEFAI necesita un viaje activo para responder con contexto.",
+  "unavailable": "FEFAI no disponible",
+  "analyzing": "Analizando tu viaje…",
+  "tabFefai": "FEFAI",
+  "tabPrice": "Precio",
+  "tabCheckin": "Check-in",
+  "noSuggestions": "No encontramos sugerencias ahora. Prueba otro estilo.",
+  "suggestFailed": "No se pudieron buscar sugerencias.",
+  "placeAdded": "Lugar agregado",
+  "placeAddedBody": "Guardado en este dispositivo. La sincronización con el servidor ocurrirá cuando la API esté actualizada.",
+  "prompt1": "¿Reorganizas mi itinerario sin pasarme del presupuesto?",
+  "prompt2": "Divide esta cuenta entre nosotros cuatro.",
+  "prompt3": "¿Qué falta en el checklist del viaje?"
+}

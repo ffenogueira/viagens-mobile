@@ -1,0 +1,17 @@
+{
+  "settings": "Configurações",
+  "trips": "Viagens",
+  "plan": "Plano",
+  "connectedProfile": "Perfil conectado ao workspace",
+  "language": "Idioma",
+  "languageDesc": "Interface do app e preferências de viagem",
+  "languageUpdated": "Idioma atualizado",
+  "notifications": "Notificações",
+  "notificationsDesc": "Alertas de viagem e grupo",
+  "privacy": "Privacidade",
+  "privacyDesc": "Localização e consentimentos",
+  "help": "Ajuda",
+  "helpDesc": "Suporte e FAQ",
+  "logout": "Sair da conta",
+  "pro": "Pro"
+}

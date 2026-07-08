@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, StatusBar } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
+import { useTranslation } from 'react-i18next'
 import { Box, Text, VStack } from '../../components/ui'
 import { BrandMark } from '../components/BrandMark'
 import { colors } from '../theme'
@@ -14,6 +15,7 @@ const ONBOARDING_KEY = 'viagens_onboarding_seen'
 type GuestScreenProps = AuthScreenProps
 
 export function GuestScreen(props: GuestScreenProps) {
+  const { t } = useTranslation('onboarding')
   const [phase, setPhase] = useState<'loading' | 'splash' | 'onboarding' | 'auth'>('loading')
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export function GuestScreen(props: GuestScreenProps) {
           <VStack className="items-center gap-5">
             <BrandMark variant="dark" size="md" />
             <Text className="max-w-[260px] text-center text-[14px] font-bold leading-6 text-muted-foreground">
-              Antes, durante e depois da viagem com IA, grupo e memória.
+              {t('splashTagline')}
             </Text>
           </VStack>
         </LinearGradient>

@@ -13,6 +13,7 @@ import {
   View
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   HStack,
@@ -20,6 +21,8 @@ import {
   Text,
   VStack
 } from '../../components/ui'
+import { formatAppDate } from '../i18n/format'
+import { i18n } from '../i18n'
 import {
   addTripItineraryItem,
   fetchTrip,
@@ -55,7 +58,16 @@ import { loadTripMedia, saveLocalPlaces, setPlacePhotoLocal, setTripCoverLocal, 
 import { colors, shadow, shadowStrong } from '../theme'
 import type { ActivitySuggestion, NavigationTarget, Trip, TripDayItem, TripToolsPanel } from '../types/trip'
 
-const ROLE_STYLES = ['Gastronomia', 'Cultura', 'Natureza', 'Compras', 'Vida noturna', 'Família', 'Aventura', 'Relax'] as const
+const ROLE_STYLES = [
+  { id: 'Gastronomia', labelKey: 'roleGastronomy' },
+  { id: 'Cultura', labelKey: 'roleCulture' },
+  { id: 'Natureza', labelKey: 'roleNature' },
+  { id: 'Compras', labelKey: 'roleShopping' },
+  { id: 'Vida noturna', labelKey: 'roleNightlife' },
+  { id: 'Família', labelKey: 'roleFamily' },
+  { id: 'Aventura', labelKey: 'roleAdventure' },
+  { id: 'Relax', labelKey: 'roleRelax' }
+] as const
 
 const GENERIC_MAP_IMAGE =
   'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80'
@@ -82,10 +94,10 @@ function buildTripCalendar(trip: Trip): CalendarDay[] {
   while (cursor.getTime() <= last.getTime() && index < 60) {
     days.push({
       id: cursor.toISOString().slice(0, 10),
-      weekday: cursor.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase(),
-      day: cursor.toLocaleDateString('pt-BR', { day: 'numeric' }),
+      weekday: formatAppDate(cursor, { weekday: 'short' }).replace('.', '').toUpperCase(),
+      day: formatAppDate(cursor, { day: 'numeric' }),
       dayNumber: index + 1,
-      label: cursor.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })
+      label: formatAppDate(cursor, { weekday: 'long', day: 'numeric', month: 'short' })
     })
     cursor.setDate(cursor.getDate() + 1)
     index += 1
@@ -95,10 +107,10 @@ function buildTripCalendar(trip: Trip): CalendarDay[] {
     const today = new Date()
     days.push({
       id: today.toISOString().slice(0, 10),
-      weekday: today.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase(),
-      day: today.toLocaleDateString('pt-BR', { day: 'numeric' }),
+      weekday: formatAppDate(today, { weekday: 'short' }).replace('.', '').toUpperCase(),
+      day: formatAppDate(today, { day: 'numeric' }),
       dayNumber: 1,
-      label: today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })
+      label: formatAppDate(today, { weekday: 'long', day: 'numeric', month: 'short' })
     })
   }
 
@@ -106,10 +118,10 @@ function buildTripCalendar(trip: Trip): CalendarDay[] {
 }
 
 function formatDateRange(start?: string, end?: string) {
-  if (!start) return 'Datas flexíveis'
+  if (!start) return i18n.t('flexibleDates', { ns: 'common' })
   const startDate = new Date(`${start}T12:00:00`)
   const endDate = end ? new Date(`${end}T12:00:00`) : null
-  const fmt = (date: Date) => date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
+  const fmt = (date: Date) => formatAppDate(date, { day: 'numeric', month: 'short' })
   if (!endDate) return fmt(startDate)
   return `${fmt(startDate)} - ${fmt(endDate)}`
 }
@@ -135,6 +147,7 @@ export function TripWorkspaceScreen({
   onTripDeleted?: (tripId: string) => void
   initialToolsPanel?: TripToolsPanel | null
 }) {
+  const { t } = useTranslation('trip')
   const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(Boolean(trip))
   const [savingPlace, setSavingPlace] = useState(false)
@@ -150,7 +163,7 @@ export function TripWorkspaceScreen({
   const [placeDescriptionDraft, setPlaceDescriptionDraft] = useState('')
   const [placeTimeDraft, setPlaceTimeDraft] = useState('')
   const [placePhotoDraft, setPlacePhotoDraft] = useState<string | null>(null)
-  const [suggestStyle, setSuggestStyle] = useState<string>(ROLE_STYLES[1])
+  const [suggestStyle, setSuggestStyle] = useState<string>(ROLE_STYLES[1].id)
   const [suggestPeriod, setSuggestPeriod] = useState<'day' | 'night'>('day')
   const [suggestLoading, setSuggestLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<ActivitySuggestion[]>([])
@@ -222,7 +235,7 @@ export function TripWorkspaceScreen({
         setMediaCache(media)
         setLocalPlaces(media.localPlaces ?? {})
         setCoverImageUri(media.coverImageUri ?? trip.cover_image_url ?? null)
-        setLoadError(error instanceof Error ? error.message : 'Não foi possível carregar a viagem.')
+        setLoadError(error instanceof Error ? error.message : t('loadFailed'))
       } finally {
         setLoading(false)
       }
@@ -343,7 +356,7 @@ export function TripWorkspaceScreen({
   function openSuggestModal() {
     setSuggestions([])
     setSuggestPeriod('day')
-    setSuggestStyle(ROLE_STYLES[1])
+    setSuggestStyle(ROLE_STYLES[1].id)
     setSuggestOpen(true)
   }
 
@@ -384,7 +397,10 @@ export function TripWorkspaceScreen({
       onTripDeleted?.(currentTrip.id)
       onBack()
     } catch (error) {
-      Alert.alert('Não foi possível excluir', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(
+        i18n.t('couldNotDelete', { ns: 'common' }),
+        error instanceof Error ? error.message : i18n.t('tryAgain', { ns: 'common' })
+      )
     } finally {
       setDeletingTrip(false)
     }
@@ -397,11 +413,11 @@ export function TripWorkspaceScreen({
     const endsAt = toIsoDateStart(editEndDate.trim())
 
     if (editStartDate && !startsAt) {
-      Alert.alert('Data inválida', 'Selecione uma data de início válida.')
+      Alert.alert(i18n.t('invalidDate', { ns: 'common' }), i18n.t('invalidStartDate', { ns: 'common' }))
       return
     }
     if (editEndDate && !endsAt) {
-      Alert.alert('Data inválida', 'Selecione uma data de fim válida.')
+      Alert.alert(i18n.t('invalidDate', { ns: 'common' }), i18n.t('invalidEndDate', { ns: 'common' }))
       return
     }
 
@@ -420,7 +436,10 @@ export function TripWorkspaceScreen({
       publishTrip(fresh)
       setEditTripOpen(false)
     } catch (error) {
-      Alert.alert('Não foi possível salvar', error instanceof Error ? error.message : 'Tente novamente.')
+      Alert.alert(
+        i18n.t('couldNotSave', { ns: 'common' }),
+        error instanceof Error ? error.message : i18n.t('tryAgain', { ns: 'common' })
+      )
     } finally {
       setSavingTripDetails(false)
     }
@@ -440,10 +459,13 @@ export function TripWorkspaceScreen({
       setSuggestions(result.suggestions)
       setSuggestionSource(result.source ?? null)
       if (!result.suggestions.length) {
-        Alert.alert('FEFAI', 'Não encontramos sugestões agora. Tente outro estilo.')
+        Alert.alert('FEFAI', i18n.t('noSuggestions', { ns: 'tools' }))
       }
     } catch (error) {
-      Alert.alert('FEFAI', error instanceof Error ? error.message : 'Não foi possível buscar sugestões.')
+      Alert.alert(
+        'FEFAI',
+        error instanceof Error ? error.message : i18n.t('suggestFailed', { ns: 'tools' })
+      )
     } finally {
       setSuggestLoading(false)
     }
@@ -559,7 +581,7 @@ export function TripWorkspaceScreen({
 
     const normalizedTime = placeTimeDraft.trim() ? normalizeTime(placeTimeDraft.trim()) : null
     if (placeTimeDraft.trim() && !normalizedTime) {
-      Alert.alert('Horário inválido', 'Use o formato HH:mm, por exemplo 14:30.')
+      Alert.alert(i18n.t('invalidTime', { ns: 'common' }), i18n.t('invalidTimeBody', { ns: 'common' }))
       return
     }
 
@@ -574,7 +596,7 @@ export function TripWorkspaceScreen({
         date: activeDayId,
         title,
         placeName: title,
-        dayTitle: `Dia ${activeDay?.dayNumber ?? 1}`,
+        dayTitle: t('dayLabel', { number: activeDay?.dayNumber ?? 1 }),
         photoUrl,
         time,
         description
@@ -611,10 +633,7 @@ export function TripWorkspaceScreen({
       setMediaCache(media)
       setLocalPlaces(nextLocalPlaces)
       closeAddPlaceModal()
-      Alert.alert(
-        'Lugar adicionado',
-        'Salvo neste aparelho. A sincronização com o servidor será feita quando a API estiver atualizada.'
-      )
+      Alert.alert(i18n.t('placeAdded', { ns: 'tools' }), i18n.t('placeAddedBody', { ns: 'tools' }))
     } finally {
       setSavingPlace(false)
     }
@@ -640,9 +659,9 @@ export function TripWorkspaceScreen({
   if (!trip || !currentTrip) {
     return (
       <Box className="flex-1 items-center justify-center bg-background px-6">
-        <Text className="text-center text-base font-semibold text-muted-foreground">Viagem não encontrada.</Text>
+        <Text className="text-center text-base font-semibold text-muted-foreground">{t('notFound')}</Text>
         <Pressable onPress={onBack} className="mt-4 rounded-full bg-primary px-5 py-3">
-          <Text className="font-black text-white">Voltar</Text>
+          <Text className="font-black text-white">{t('common:back')}</Text>
         </Pressable>
       </Box>
     )
@@ -695,13 +714,13 @@ export function TripWorkspaceScreen({
             </HStack>
 
             <View style={{ flex: 1, justifyContent: 'flex-end', paddingHorizontal: 20, paddingBottom: 32 }}>
-              <Text className="text-[12px] font-black uppercase tracking-[1.6px] text-white/75">Sua viagem</Text>
+              <Text className="text-[12px] font-black uppercase tracking-[1.6px] text-white/75">{t('common:yourTrip')}</Text>
               <Pressable onPress={openEditTripModal}>
                 <Text className="mt-1 text-[34px] font-black leading-[38px] text-white" numberOfLines={1}>
                   {currentTrip.destination}
                 </Text>
                 <Text className="mt-1 text-[13px] font-bold text-white/85">
-                  {formatDateRange(currentTrip.start_date, currentTrip.end_date)} · toque para editar
+                  {t('tapToEdit', { range: formatDateRange(currentTrip.start_date, currentTrip.end_date) })}
                 </Text>
               </Pressable>
             </View>
@@ -716,14 +735,14 @@ export function TripWorkspaceScreen({
           ) : null}
 
           <Text className="mb-3 text-[11px] font-black uppercase tracking-[1.6px] text-muted-foreground">
-            Atalhos da viagem
+            {t('tripShortcuts')}
           </Text>
           <TripToolsBar
             wishlistCount={wishlistCount}
             checklistLabel={checklistTotal ? `${checklistDone}/${checklistTotal}` : '0'}
             membersCount={membersCount}
             expenseLabel={expenseTotal > 0 ? `${Math.round(expenseTotal)} ${currency}` : currency}
-            boardLabel={boardCount ? String(boardCount) : 'Notas'}
+            boardLabel={boardCount ? String(boardCount) : t('notes')}
             onWishlist={() => setToolsPanel('wishlist')}
             onChecklist={() => setToolsPanel('checklist')}
             onTravelers={() => onNavigate('group-chat')}
@@ -732,7 +751,7 @@ export function TripWorkspaceScreen({
           />
 
           <Text className="mb-3 mt-8 text-[11px] font-black uppercase tracking-[1.6px] text-muted-foreground">
-            Dias da viagem
+            {t('tripDays')}
           </Text>
           <ScrollView
             horizontal
@@ -766,7 +785,7 @@ export function TripWorkspaceScreen({
 
           <HStack className="mb-5 mt-2 items-start justify-between">
             <VStack className="flex-1 pr-3">
-              <Text className="text-[28px] font-black text-foreground">Dia {activeDay?.dayNumber ?? 1}</Text>
+              <Text className="text-[28px] font-black text-foreground">{t('dayLabel', { number: activeDay?.dayNumber ?? 1 })}</Text>
               <Text className="mt-1 text-[14px] font-semibold capitalize text-muted-foreground">
                 {activeDay?.label}
               </Text>
@@ -784,9 +803,9 @@ export function TripWorkspaceScreen({
               <Box className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-viagens-lilac">
                 <Ionicons color={colors.primary} name="location-outline" size={36} />
               </Box>
-              <Text className="text-center text-[20px] font-black text-foreground">Nenhum local adicionado</Text>
+              <Text className="text-center text-[20px] font-black text-foreground">{t('noPlaces')}</Text>
               <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
-                Comece a adicionar lugares que deseja visitar neste dia.
+                {t('noPlacesHint')}
               </Text>
             </VStack>
           ) : (
@@ -829,7 +848,7 @@ export function TripWorkspaceScreen({
                           </Text>
                         ) : null}
                         <Text className="mt-1 text-[12px] font-semibold text-primary">
-                          {place.photoUrl ? 'Toque para trocar a foto' : 'Toque para adicionar foto'}
+                          {place.photoUrl ? t('tapChangePhoto') : t('tapAddPhoto')}
                         </Text>
                       </VStack>
                       <Ionicons color={colors.mutedLight} name="camera-outline" size={20} />
@@ -850,8 +869,8 @@ export function TripWorkspaceScreen({
                 <Ionicons color={colors.white} name="add" size={28} />
               </Box>
               <VStack className="flex-1">
-                <Text className="text-[18px] font-black text-foreground">Adicionar lugar</Text>
-                <Text className="mt-0.5 text-[13px] font-semibold text-muted-foreground">Para onde você quer ir?</Text>
+                <Text className="text-[18px] font-black text-foreground">{t('addPlaceTitle')}</Text>
+                <Text className="mt-0.5 text-[13px] font-semibold text-muted-foreground">{t('addPlaceSubtitle')}</Text>
               </VStack>
               <Ionicons color={colors.mutedLight} name="chevron-forward" size={22} />
             </HStack>
@@ -879,14 +898,14 @@ export function TripWorkspaceScreen({
               )}
               <Box className="absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-1.5">
                 <Text className="text-[12px] font-black text-foreground">
-                  {dayPlaces.length} {dayPlaces.length === 1 ? 'lugar' : 'lugares'}
+                  {dayPlaces.length} {dayPlaces.length === 1 ? t('placeSingular') : t('placePlural')}
                 </Text>
               </Box>
               {(dayMapMarkers.length > 0 || tripMapMarkers.length > 0) && (
                 <Box className="absolute bottom-4 right-4 rounded-full bg-primary px-3 py-1.5">
                   <HStack className="items-center gap-1">
                     <Ionicons color={colors.white} name="expand-outline" size={14} />
-                    <Text className="text-[12px] font-black text-white">Abrir mapa</Text>
+                    <Text className="text-[12px] font-black text-white">{t('openMap')}</Text>
                   </HStack>
                 </Box>
               )}
@@ -903,9 +922,9 @@ export function TripWorkspaceScreen({
           >
             <View style={{ borderTopLeftRadius: 32, borderTopRightRadius: 32, backgroundColor: '#FFF', paddingHorizontal: 20, paddingBottom: 32, paddingTop: 16 }}>
               <View style={{ alignSelf: 'center', width: 64, height: 6, borderRadius: 999, backgroundColor: '#D1D5DB', marginBottom: 20 }} />
-              <Text className="text-[24px] font-black text-foreground">Adicionar lugar</Text>
+              <Text className="text-[24px] font-black text-foreground">{t('addPlaceTitle')}</Text>
               <Text className="mt-1 text-[13px] font-semibold text-muted-foreground">
-                Restaurante, museu, passeio, ponto turístico...
+                {t('addPlaceHint')}
               </Text>
 
               <Pressable
@@ -913,13 +932,13 @@ export function TripWorkspaceScreen({
                 className="mt-4 flex-row items-center gap-2 rounded-2xl border border-[#E9D5FF] bg-viagens-lilac px-4 py-3"
               >
                 <Ionicons color={colors.primary} name="sparkles" size={18} />
-                <Text className="text-[13px] font-black text-primary">Pedir sugestão de rolê para FEFAI</Text>
+                <Text className="text-[13px] font-black text-primary">{t('askFefaiSuggest')}</Text>
               </Pressable>
 
               <TextInput
                 value={placeDraft}
                 onChangeText={setPlaceDraft}
-                placeholder="Ex.: Museu do Ouro"
+                placeholder={t('placePlaceholder')}
                 placeholderTextColor={colors.muted}
                 style={{
                   marginTop: 16,
@@ -936,7 +955,7 @@ export function TripWorkspaceScreen({
 
               <HStack className="mt-3 items-center gap-3">
                 <Box className="flex-1">
-                  <Text className="mb-1 text-[11px] font-black uppercase text-muted-foreground">Horário</Text>
+                  <Text className="mb-1 text-[11px] font-black uppercase text-muted-foreground">{t('timeLabel')}</Text>
                   <TextInput
                     value={placeTimeDraft}
                     onChangeText={setPlaceTimeDraft}
@@ -965,11 +984,11 @@ export function TripWorkspaceScreen({
                 </Box>
               </HStack>
 
-              <Text className="mb-1 mt-3 text-[11px] font-black uppercase text-muted-foreground">Descrição</Text>
+              <Text className="mb-1 mt-3 text-[11px] font-black uppercase text-muted-foreground">{t('descriptionLabel')}</Text>
               <TextInput
                 value={placeDescriptionDraft}
                 onChangeText={setPlaceDescriptionDraft}
-                placeholder="O que você quer fazer neste lugar?"
+                placeholder={t('placeDescriptionPlaceholder')}
                 placeholderTextColor={colors.muted}
                 multiline
                 textAlignVertical="top"
@@ -1001,7 +1020,7 @@ export function TripWorkspaceScreen({
                 ) : (
                   <View style={{ height: 120, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
                     <Ionicons color={colors.primary} name="camera-outline" size={28} />
-                    <Text className="mt-2 text-[13px] font-black text-primary">Adicionar foto do lugar</Text>
+                    <Text className="mt-2 text-[13px] font-black text-primary">{t('addPlacePhoto')}</Text>
                   </View>
                 )}
               </Pressable>
@@ -1013,11 +1032,11 @@ export function TripWorkspaceScreen({
                 {savingPlace ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text className="text-[16px] font-black text-white">Salvar no dia {activeDay?.dayNumber ?? 1}</Text>
+                  <Text className="text-[16px] font-black text-white">{t('saveOnDay', { number: activeDay?.dayNumber ?? 1 })}</Text>
                 )}
               </Pressable>
               <Pressable onPress={closeAddPlaceModal} className="mt-4 items-center">
-                <Text className="text-[14px] font-bold text-muted-foreground">Cancelar</Text>
+                <Text className="text-[14px] font-bold text-muted-foreground">{t('common:cancel')}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -1029,36 +1048,36 @@ export function TripWorkspaceScreen({
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
             <View style={{ borderTopLeftRadius: 32, borderTopRightRadius: 32, backgroundColor: '#FFF', paddingHorizontal: 20, paddingBottom: 32, paddingTop: 16, maxHeight: '88%' }}>
               <View style={{ alignSelf: 'center', width: 64, height: 6, borderRadius: 999, backgroundColor: '#D1D5DB', marginBottom: 20 }} />
-              <Text className="text-[24px] font-black text-foreground">Sugestão FEFAI</Text>
+              <Text className="text-[24px] font-black text-foreground">{t('fefaiSuggestTitle')}</Text>
               <Text className="mt-1 mb-6 text-[13px] font-semibold text-muted-foreground">
                 {currentTrip.destination}
                 {currentTrip.country ? `, ${currentTrip.country}` : ''} · {activeDay?.label}
               </Text>
               <Pressable onPress={openEditTripModal} className="mb-4 self-start">
-                <Text className="text-[12px] font-black text-primary">Editar destino ou datas</Text>
+                <Text className="text-[12px] font-black text-primary">{t('editDestinationOrDates')}</Text>
               </Pressable>
 
-              <Text className="mb-2 text-[11px] font-black uppercase text-muted-foreground">Estilo do rolê</Text>
+              <Text className="mb-2 text-[11px] font-black uppercase text-muted-foreground">{t('roleStyleLabel')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {ROLE_STYLES.map((style) => {
-                  const active = suggestStyle === style
+                  const active = suggestStyle === style.id
                   return (
                     <Pressable
-                      key={style}
-                      onPress={() => setSuggestStyle(style)}
+                      key={style.id}
+                      onPress={() => setSuggestStyle(style.id)}
                       className={`rounded-full px-3 py-2 ${active ? 'bg-primary' : 'border border-[#E5E7EB] bg-white'}`}
                     >
-                      <Text className={`text-[12px] font-black ${active ? 'text-white' : 'text-foreground'}`}>{style}</Text>
+                      <Text className={`text-[12px] font-black ${active ? 'text-white' : 'text-foreground'}`}>{t(style.labelKey)}</Text>
                     </Pressable>
                   )
                 })}
               </View>
 
-              <Text className="mb-2 mt-5 text-[11px] font-black uppercase text-muted-foreground">Período</Text>
+              <Text className="mb-2 mt-5 text-[11px] font-black uppercase text-muted-foreground">{t('periodLabel')}</Text>
               <HStack className="gap-3">
                 {([
-                  { id: 'day' as const, label: 'De dia', icon: 'sunny-outline' as const },
-                  { id: 'night' as const, label: 'De noite', icon: 'moon-outline' as const }
+                  { id: 'day' as const, label: t('periodDay'), icon: 'sunny-outline' as const },
+                  { id: 'night' as const, label: t('periodNight'), icon: 'moon-outline' as const }
                 ]).map((option) => {
                   const active = suggestPeriod === option.id
                   return (
@@ -1086,7 +1105,7 @@ export function TripWorkspaceScreen({
                 {suggestLoading ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text className="text-[16px] font-black text-white">Buscar 3 sugestões</Text>
+                  <Text className="text-[16px] font-black text-white">{t('fetchThreeSuggestions')}</Text>
                 )}
               </Pressable>
 
@@ -1094,7 +1113,7 @@ export function TripWorkspaceScreen({
                 <VStack className="mt-5 gap-3">
                   {suggestionSource ? (
                     <Text className="text-[11px] font-black uppercase text-muted-foreground">
-                      {suggestionSource === 'ai' ? 'Sugestões da FEFAI' : 'Sugestões rápidas (offline)'}
+                      {suggestionSource === 'ai' ? t('suggestionsAi') : t('suggestionsOffline')}
                     </Text>
                   ) : null}
                   {suggestions.map((item, index) => (
@@ -1122,7 +1141,7 @@ export function TripWorkspaceScreen({
                         </HStack>
                         <Text className="mt-2 text-[13px] font-semibold leading-5 text-muted-foreground">{item.description}</Text>
                         <Text className="mt-2 text-[12px] font-black text-primary">
-                          {item.photoUrl ? 'Usar sugestão com foto' : 'Usar esta sugestão'}
+                          {item.photoUrl ? t('useSuggestionWithPhoto') : t('useSuggestion')}
                         </Text>
                       </Box>
                     </Pressable>
@@ -1131,7 +1150,7 @@ export function TripWorkspaceScreen({
               ) : null}
 
               <Pressable onPress={() => setSuggestOpen(false)} className="mt-4 items-center">
-                <Text className="text-[14px] font-bold text-muted-foreground">Fechar</Text>
+                <Text className="text-[14px] font-bold text-muted-foreground">{t('common:close')}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -1143,13 +1162,13 @@ export function TripWorkspaceScreen({
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
             <View style={{ borderTopLeftRadius: 32, borderTopRightRadius: 32, backgroundColor: '#FFF', paddingHorizontal: 20, paddingBottom: 32, paddingTop: 16 }}>
               <View style={{ alignSelf: 'center', width: 64, height: 6, borderRadius: 999, backgroundColor: '#D1D5DB', marginBottom: 20 }} />
-              <Text className="text-[24px] font-black text-foreground">Editar viagem</Text>
+              <Text className="text-[24px] font-black text-foreground">{t('common:editTrip')}</Text>
               <Text className="mt-1 mb-5 text-[13px] font-semibold text-muted-foreground">
-                Escolha a cidade exata para a FEFAI sugerir melhor.
+                {t('editTripFefaiHint')}
               </Text>
 
               <DestinationAutocomplete
-                label="Cidade ou destino"
+                label={t('cityOrDestination')}
                 value={editDestination}
                 onChangeText={(text) => {
                   setEditDestination(text)
@@ -1164,7 +1183,7 @@ export function TripWorkspaceScreen({
 
               <Box className="mt-4">
                 <BrazilianDateField
-                  label="Início"
+                  label={t('startLabel')}
                   value={editStartDate}
                   onChange={setEditStartDate}
                 />
@@ -1172,7 +1191,7 @@ export function TripWorkspaceScreen({
 
               <Box className="mt-4">
                 <BrazilianDateField
-                  label="Fim"
+                  label={t('endLabel')}
                   value={editEndDate}
                   onChange={setEditEndDate}
                   minimumDate={
@@ -1191,11 +1210,11 @@ export function TripWorkspaceScreen({
                 {savingTripDetails ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text className="text-[16px] font-black text-white">Salvar viagem</Text>
+                  <Text className="text-[16px] font-black text-white">{t('saveTrip')}</Text>
                 )}
               </Pressable>
               <Pressable onPress={() => setEditTripOpen(false)} className="mt-4 items-center">
-                <Text className="text-[14px] font-bold text-muted-foreground">Cancelar</Text>
+                <Text className="text-[14px] font-bold text-muted-foreground">{t('common:cancel')}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -1289,32 +1308,33 @@ function TripToolsBar({
   onBudget: () => void
   onBoard: () => void
 }) {
+  const { t } = useTranslation('trip')
   const tools = [
-    { icon: 'star-outline' as const, label: 'Wishlist', value: String(wishlistCount), color: colors.orange, onPress: onWishlist },
+    { icon: 'star-outline' as const, label: t('wishlist'), value: String(wishlistCount), color: colors.orange, onPress: onWishlist },
     {
       icon: 'checkmark-circle-outline' as const,
-      label: 'Checklist',
+      label: t('checklist'),
       value: checklistLabel,
       color: colors.mint,
       onPress: onChecklist
     },
     {
       icon: 'people-outline' as const,
-      label: 'Grupo',
+      label: t('group'),
       value: String(membersCount),
       color: colors.primary,
       onPress: onTravelers
     },
     {
       icon: 'wallet-outline' as const,
-      label: 'Gastos',
+      label: t('expenses'),
       value: expenseLabel,
       color: colors.sky,
       onPress: onBudget
     },
     {
       icon: 'document-text-outline' as const,
-      label: 'Mural',
+      label: t('journal'),
       value: boardLabel,
       color: colors.primary,
       onPress: onBoard

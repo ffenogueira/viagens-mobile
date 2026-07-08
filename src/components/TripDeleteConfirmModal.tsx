@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons'
 import React from 'react'
 import { ActivityIndicator, Modal, Pressable as RNPressable, View } from 'react-native'
-import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
+import { useTranslation } from 'react-i18next'
+import { Box, Pressable, Text, VStack } from '../../components/ui'
 import { colors } from '../theme'
 
 type TripDeleteConfirmModalProps = {
@@ -19,6 +20,8 @@ export function TripDeleteConfirmModal({
   onCancel,
   onConfirm
 }: TripDeleteConfirmModalProps) {
+  const { t } = useTranslation('common')
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <RNPressable
@@ -39,14 +42,14 @@ export function TripDeleteConfirmModal({
               <Ionicons color={colors.danger} name="trash-outline" size={28} />
             </Box>
 
-            <Text className="text-center text-[22px] font-black text-foreground">Excluir viagem?</Text>
+            <Text className="text-center text-[22px] font-black text-foreground">{t('deleteTripConfirmTitle')}</Text>
             <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
               {destination
-                ? `“${destination}” será removida permanentemente, incluindo roteiro, gastos e memórias vinculadas.`
-                : 'Esta viagem será removida permanentemente, incluindo roteiro, gastos e memórias vinculadas.'}
+                ? t('deleteTripConfirmNamed', { destination })
+                : t('deleteTripConfirmBody')}
             </Text>
             <Text className="mt-3 text-center text-[13px] font-black" style={{ color: colors.danger }}>
-              Esta ação não pode ser desfeita.
+              {t('deleteTripIrreversible')}
             </Text>
 
             <VStack className="mt-6 gap-3">
@@ -59,7 +62,7 @@ export function TripDeleteConfirmModal({
                 {loading ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text className="text-[16px] font-black text-white">Sim, excluir viagem</Text>
+                  <Text className="text-[16px] font-black text-white">{t('deleteTripConfirmCta')}</Text>
                 )}
               </Pressable>
               <Pressable
@@ -67,7 +70,7 @@ export function TripDeleteConfirmModal({
                 disabled={loading}
                 className="h-14 items-center justify-center rounded-full bg-[#F1F5F9]"
               >
-                <Text className="text-[16px] font-black text-foreground">Cancelar</Text>
+                <Text className="text-[16px] font-black text-foreground">{t('cancel')}</Text>
               </Pressable>
             </VStack>
           </View>

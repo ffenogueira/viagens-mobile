@@ -1,4 +1,5 @@
 import type { Ionicons } from '@expo/vector-icons'
+import { getActiveLocale } from '../i18n'
 
 export type DayPeriod = 'day' | 'night'
 
@@ -36,7 +37,7 @@ export function formatPlaceTime(startsAt?: string | null, timeFallback?: string 
   if (!startsAt) return null
   const parsed = new Date(startsAt)
   if (Number.isNaN(parsed.getTime())) return null
-  return parsed.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return parsed.toLocaleTimeString(getActiveLocale(), { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 export function combineDateAndTime(date: string, time: string): string {
