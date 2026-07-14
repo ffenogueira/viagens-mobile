@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import * as WebBrowser from 'expo-web-browser'
 import React, { useMemo } from 'react'
 import { Linking, Modal, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -21,9 +22,13 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
   const insets = useSafeAreaInsets()
   const googleMapsUrl = useMemo(() => buildGoogleMapsUrl(markers), [markers])
 
-  function openExternalMap() {
+  async function openInteractiveMap() {
     if (!googleMapsUrl) return
-    void Linking.openURL(googleMapsUrl)
+    try {
+      await WebBrowser.openBrowserAsync(googleMapsUrl)
+    } catch {
+      void Linking.openURL(googleMapsUrl)
+    }
   }
 
   return (
@@ -46,9 +51,27 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
         </HStack>
 
         <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}>
-          {markers.length ? <TripMapCanvas markers={markers} height={260} /> : null}
+          {markers.length ? (
+            <Box className="overflow-hidden rounded-b-[28px]">
+              <TripMapCanvas markers={markers} height={340} />
+            </Box>
+          ) : null}
 
           <VStack className="gap-3 px-5 pt-5">
+            <Box className="rounded-[24px] border border-[#EDE9FE] bg-white p-4">
+              <HStack className="items-start gap-3">
+                <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-viagens-lilac">
+                  <Ionicons color={colors.primary} name="hand-left-outline" size={21} />
+                </Box>
+                <VStack className="flex-1">
+                  <Text className="text-[15px] font-black text-foreground">Quer mexer no mapa?</Text>
+                  <Text className="mt-1 text-[12px] font-semibold leading-5 text-muted-foreground">
+                    Toque em “Abrir mapa interativo” para arrastar, dar zoom, ver distância e seguir a rota dentro do app.
+                  </Text>
+                </VStack>
+              </HStack>
+            </Box>
+
             <Text className="text-[13px] font-semibold text-muted-foreground">
               {markers.length === 1
                 ? t('markedPlaceSingular', { count: markers.length })
@@ -79,10 +102,10 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
             ))}
 
             {googleMapsUrl ? (
-              <Pressable onPress={openExternalMap} className="mt-2 h-14 items-center justify-center rounded-full bg-primary">
+              <Pressable onPress={() => void openInteractiveMap()} className="mt-2 h-14 items-center justify-center rounded-full bg-primary">
                 <HStack className="items-center gap-2">
                   <Ionicons color={colors.white} name="map-outline" size={18} />
-                  <Text className="text-[16px] font-black text-white">{t('openGoogleMaps')}</Text>
+                  <Text className="text-[16px] font-black text-white">Abrir mapa interativo</Text>
                 </HStack>
               </Pressable>
             ) : null}

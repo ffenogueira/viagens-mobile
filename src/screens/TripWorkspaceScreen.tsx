@@ -898,14 +898,14 @@ export function TripWorkspaceScreen({
               )}
               <Box className="absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-1.5">
                 <Text className="text-[12px] font-black text-foreground">
-                  {dayPlaces.length} {dayPlaces.length === 1 ? t('placeSingular') : t('placePlural')}
+                  Toque para abrir · {dayPlaces.length} {dayPlaces.length === 1 ? t('placeSingular') : t('placePlural')}
                 </Text>
               </Box>
               {(dayMapMarkers.length > 0 || tripMapMarkers.length > 0) && (
                 <Box className="absolute bottom-4 right-4 rounded-full bg-primary px-3 py-1.5">
                   <HStack className="items-center gap-1">
                     <Ionicons color={colors.white} name="expand-outline" size={14} />
-                    <Text className="text-[12px] font-black text-white">{t('openMap')}</Text>
+                    <Text className="text-[12px] font-black text-white">Mapa interativo</Text>
                   </HStack>
                 </Box>
               )}

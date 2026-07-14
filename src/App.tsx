@@ -12,7 +12,8 @@ import {
   login,
   loginWithSocial,
   register,
-  restoreSession
+  restoreSession,
+  updateUserLocale
 } from './api/client'
 import {
   obtainSocialCredential,
@@ -39,8 +40,8 @@ import { TripWorkspaceScreen } from './screens/TripWorkspaceScreen'
 import { UtilitiesScreen } from './screens/UtilitiesScreen'
 import { colors } from './theme'
 import { parseInviteTokenFromUrl } from './lib/tripInvite'
-import { changeAppLocale, initI18n, i18n } from './i18n'
-import type { AppLocale } from './i18n/types'
+import { changeAppLocale, getActiveLocale, initI18n, i18n } from './i18n'
+import { LOCALE_OPTIONS, type AppLocale } from './i18n/types'
 import type { NavigationTarget, OverlayScreen, Tab, Trip, TripHomeShortcut, TripToolsPanel } from './types/trip'
 
 const PENDING_INVITE_KEY = 'viagens_pending_invite'
@@ -81,6 +82,7 @@ function AppContent() {
   const [inviteToken, setInviteToken] = useState<string | null>(null)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [i18nReady, setI18nReady] = useState(false)
+  const [postSignupOpen, setPostSignupOpen] = useState(false)
 
   async function applyUserLocale(locale?: string | null) {
     if (!locale) return
@@ -199,6 +201,7 @@ function AppContent() {
 
     setLoading(true)
     try {
+      const isRegistering = mode === 'register'
       const authSession = mode === 'login'
         ? await login(trimmedEmail, password)
         : await register(trimmedName, trimmedEmail, password)
@@ -216,6 +219,9 @@ function AppContent() {
         setSelectedTrip(null)
       }
       setSession('authenticated')
+      if (isRegistering) {
+        setPostSignupOpen(true)
+      }
       await resumePendingInvite()
     } catch (error) {
       Alert.alert(
@@ -538,6 +544,18 @@ function AppContent() {
         visible={notificationSheetOpen}
         onClose={() => setNotificationSheetOpen(false)}
       />
+      <PostSignupSetupModal
+        visible={postSignupOpen}
+        user={user}
+        onClose={() => setPostSignupOpen(false)}
+        onCreateTrip={() => {
+          setPostSignupOpen(false)
+          setCreateTripOpen(true)
+        }}
+        onLocaleChanged={(locale) => {
+          setUser((current) => (current ? { ...current, locale } : current))
+        }}
+      />
       {session === 'authenticated' ? (
         <InviteAcceptModal
           visible={inviteModalOpen}
@@ -552,6 +570,127 @@ function AppContent() {
         />
       ) : null}
     </SafeAreaView>
+  )
+}
+
+function PostSignupSetupModal({
+  visible,
+  user,
+  onClose,
+  onCreateTrip,
+  onLocaleChanged
+}: {
+  visible: boolean
+  user: AuthUser | null
+  onClose: () => void
+  onCreateTrip: () => void
+  onLocaleChanged: (locale: AppLocale) => void
+}) {
+  const [locale, setLocale] = useState<AppLocale>(getActiveLocale())
+  const steps = [
+    {
+      icon: 'language-outline' as const,
+      title: 'Escolha o idioma',
+      desc: 'O app, datas e mensagens ficam no idioma que você usa para viajar.'
+    },
+    {
+      icon: 'location-outline' as const,
+      title: 'Conte seu próximo destino',
+      desc: 'A FEFAI usa destino, datas e estilo para sugerir roteiro de verdade.'
+    },
+    {
+      icon: 'people-outline' as const,
+      title: 'Convide quem vai junto',
+      desc: 'Grupo, gastos, chat, checklist e fotos ficam no mesmo espaço.'
+    },
+    {
+      icon: 'navigate-outline' as const,
+      title: 'Ative quando estiver viajando',
+      desc: 'Check-ins e mapa vivido só funcionam com consentimento e podem ser pausados.'
+    }
+  ]
+
+  async function selectLocale(next: AppLocale) {
+    setLocale(next)
+    await changeAppLocale(next)
+    onLocaleChanged(next)
+    try {
+      if (user) await updateUserLocale(next)
+    } catch {
+      // Preferência local já foi salva; a API sincroniza quando disponível.
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <Box className="flex-1 justify-end bg-black/35">
+        <Box className="rounded-t-[38px] bg-white px-5 pb-8 pt-3">
+          <Box className="mb-5 h-1.5 w-16 self-center rounded-full bg-[#D1D5DB]" />
+
+          <HStack className="items-start justify-between gap-3">
+            <VStack className="flex-1">
+              <Text className="text-[12px] font-black uppercase tracking-[1.4px] text-primary">
+                Primeiro setup
+              </Text>
+              <Text className="mt-1 text-[28px] font-black leading-[33px] text-foreground">
+                Vamos deixar sua viagem com a sua cara
+              </Text>
+              <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
+                Leva menos de um minuto. Depois você já pode criar viagem, chamar amigos e usar a FEFAI.
+              </Text>
+            </VStack>
+            <Pressable onPress={onClose} className="h-10 w-10 items-center justify-center rounded-full bg-[#F8FAFC]">
+              <Ionicons color={colors.ink} name="close" size={20} />
+            </Pressable>
+          </HStack>
+
+          <HStack className="mt-5 gap-2">
+            {LOCALE_OPTIONS.map((option) => {
+              const active = option.id === locale
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => void selectLocale(option.id)}
+                  className={`flex-1 items-center rounded-full border px-2 py-3 ${
+                    active ? 'border-primary bg-viagens-lilac' : 'border-[#E5E7EB] bg-white'
+                  }`}
+                >
+                  <Text className={`text-[12px] font-black ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {option.nativeLabel}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </HStack>
+
+          <VStack className="mt-5 gap-3 rounded-[28px] bg-[#F8FAFC] p-4">
+            {steps.map((step, index) => (
+              <HStack key={step.title} className="items-start gap-3">
+                <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
+                  <Ionicons color={index === 0 ? colors.primary : colors.mint} name={step.icon} size={22} />
+                </Box>
+                <VStack className="flex-1">
+                  <Text className="text-[15px] font-black text-foreground">{step.title}</Text>
+                  <Text className="mt-0.5 text-[12px] font-semibold leading-5 text-muted-foreground">
+                    {step.desc}
+                  </Text>
+                </VStack>
+              </HStack>
+            ))}
+          </VStack>
+
+          <Pressable onPress={onCreateTrip} className="mt-6 h-14 items-center justify-center rounded-full bg-primary">
+            <HStack className="items-center gap-2">
+              <Ionicons color={colors.white} name="airplane" size={18} />
+              <Text className="text-[16px] font-black text-white">Criar minha primeira viagem</Text>
+            </HStack>
+          </Pressable>
+          <Pressable onPress={onClose} className="mt-4 items-center">
+            <Text className="text-[14px] font-black text-muted-foreground">Agora não</Text>
+          </Pressable>
+        </Box>
+      </Box>
+    </Modal>
   )
 }
 

@@ -40,6 +40,7 @@ type TodayScreenProps = {
 
 type ActionCard = {
   title: string
+  description: string
   icon: keyof typeof Ionicons.glyphMap
   target: NavigationTarget
   accent: string
@@ -49,61 +50,71 @@ const absoluteFill = StyleSheet.absoluteFill
 
 const travelShortcuts: ActionCard[] = [
   {
-    title: 'Banheiros',
+    title: 'Banheiro por perto',
+    description: 'Ache pontos úteis perto de você.',
     icon: 'water-outline',
     target: 'utilities',
     accent: colors.primary
   },
   {
     title: 'Guardar mala',
+    description: 'Veja opções para deixar bagagem.',
     icon: 'briefcase-outline',
     target: 'utilities',
     accent: colors.sky
   },
   {
-    title: 'Conversor',
+    title: 'Converter moeda',
+    description: 'Entenda o preço em reais na hora.',
     icon: 'cash-outline',
     target: 'utilities',
     accent: colors.mint
   },
   {
-    title: 'Previsão',
+    title: 'Clima da viagem',
+    description: 'Veja tempo e ajuste o roteiro.',
     icon: 'partly-sunny-outline',
     target: 'weather',
     accent: colors.orange
   },
   {
-    title: 'FEFAI',
+    title: 'Assistente FEFAI',
+    description: 'IA para roteiro, dúvidas e imprevistos.',
     icon: 'sparkles',
     target: 'tools',
     accent: colors.primary
   },
   {
-    title: 'Street View',
+    title: 'Ver a rua',
+    description: 'Conheça a região antes de ir.',
     icon: 'navigate-outline',
     target: 'utilities',
     accent: colors.orange
   },
   {
-    title: 'Ler preço',
+    title: 'Ler preço com câmera',
+    description: 'OCR para preço, moeda e recibo.',
     icon: 'scan',
     target: 'tools-camera',
     accent: colors.sky
   },
   {
-    title: 'Gastos',
+    title: 'Gastos da viagem',
+    description: 'Orçamento, recibos e histórico.',
     icon: 'wallet-outline',
     target: 'expenses',
     accent: colors.mint
   },
   {
     title: 'Dividir conta',
+    description: 'Veja quem pagou e quem deve.',
     icon: 'people-outline',
     target: 'bill-split',
     accent: colors.primary
   },
   {
-    title: 'Chat grupo',
+    title: 'Chat do grupo',
+    description: 'Combinados e decisões no mesmo lugar.',
     icon: 'chatbubbles-outline',
     target: 'group-chat',
     accent: colors.sky
@@ -244,9 +255,13 @@ export function TodayScreen({
       <SegmentedTrips active={segment} onChange={handleSegmentChange} />
 
       {!displayTrip ? (
-        <EmptySegmentState segment={segment} loading={loading} onCreateTrip={onOpenCreateTrip} />
+        <VStack>
+          <GuideTipCard onCreateTrip={onOpenCreateTrip} onOpenFefai={() => onNavigate('tools')} />
+          <EmptySegmentState segment={segment} loading={loading} onCreateTrip={onOpenCreateTrip} />
+        </VStack>
       ) : (
         <VStack>
+          <GuideTipCard onCreateTrip={onOpenCreateTrip} onOpenFefai={() => onNavigate('tools')} compact />
           <TripHomeCard
             trip={cardTrip}
             coverUri={
@@ -500,13 +515,16 @@ function EmptyTripState({
 
 function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTarget) => void }) {
   const rows: ActionCard[][] = []
-  for (let index = 0; index < travelShortcuts.length; index += 3) {
-    rows.push(travelShortcuts.slice(index, index + 3))
+  for (let index = 0; index < travelShortcuts.length; index += 2) {
+    rows.push(travelShortcuts.slice(index, index + 2))
   }
 
   return (
     <VStack className="mt-7">
-      <Text className="mb-3 text-[20px] font-black text-foreground">Atalhos úteis na viagem</Text>
+      <Text className="mb-1 text-[20px] font-black text-foreground">O que você resolve aqui</Text>
+      <Text className="mb-4 text-[13px] font-semibold leading-5 text-muted-foreground">
+        Atalhos com nomes simples para usar antes, durante e depois da viagem.
+      </Text>
       <VStack className="gap-3">
         {rows.map((row, rowIndex) => (
           <HStack key={`row-${rowIndex}`} className="gap-3">
@@ -514,25 +532,28 @@ function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTa
               <Pressable
                 key={action.title}
                 onPress={() => onNavigate(action.target)}
-                className="flex-1 items-center justify-center rounded-[22px] border border-[#EEF2FF] bg-white py-4"
-                style={[shadow, { aspectRatio: 1 }]}
+                className="flex-1 rounded-[24px] border border-[#EEF2FF] bg-white p-4"
+                style={shadow}
               >
                 <Box
-                  className="h-11 w-11 items-center justify-center rounded-2xl"
+                  className="mb-3 h-11 w-11 items-center justify-center rounded-2xl"
                   style={{ backgroundColor: `${action.accent}18` }}
                 >
                   <Ionicons color={action.accent} name={action.icon} size={22} />
                 </Box>
                 <Text
-                  className="mt-2 px-1 text-center text-[11px] font-black leading-4 text-foreground"
+                  className="text-[14px] font-black leading-5 text-foreground"
                   numberOfLines={2}
                 >
                   {action.title}
                 </Text>
+                <Text className="mt-1 text-[11px] font-semibold leading-4 text-muted-foreground" numberOfLines={3}>
+                  {action.description}
+                </Text>
               </Pressable>
             ))}
-            {row.length < 3
-              ? Array.from({ length: 3 - row.length }).map((_, fillerIndex) => (
+            {row.length < 2
+              ? Array.from({ length: 2 - row.length }).map((_, fillerIndex) => (
                   <Box key={`filler-${rowIndex}-${fillerIndex}`} className="flex-1" />
                 ))
               : null}
@@ -540,6 +561,70 @@ function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTa
         ))}
       </VStack>
     </VStack>
+  )
+}
+
+function GuideTipCard({
+  compact = false,
+  onCreateTrip,
+  onOpenFefai
+}: {
+  compact?: boolean
+  onCreateTrip: () => void
+  onOpenFefai: () => void
+}) {
+  const steps = [
+    { icon: 'map-outline' as const, title: 'Crie a viagem', desc: 'Destino, datas e estilo do rolê.' },
+    { icon: 'sparkles' as const, title: 'Peça para a FEFAI', desc: 'Roteiro, custos e alertas com contexto.' },
+    { icon: 'people-outline' as const, title: 'Chame o grupo', desc: 'Convite, gastos, chat e fotos juntos.' }
+  ]
+
+  return (
+    <Box className={`${compact ? 'mb-4' : 'mb-5'} overflow-hidden rounded-[28px] border border-[#EDE9FE] bg-white`} style={shadow}>
+      <LinearGradient
+        colors={['#FFFFFF', '#F6F0FF', '#ECFEFF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ padding: 16 }}
+      >
+        <HStack className="mb-3 items-center justify-between">
+          <VStack className="flex-1">
+            <Text className="text-[12px] font-black uppercase tracking-[1.2px] text-primary">Guia rápido</Text>
+            <Text className="mt-1 text-[18px] font-black leading-6 text-foreground">
+              Monte tudo sem virar planilha
+            </Text>
+          </VStack>
+          <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
+            <Ionicons color={colors.primary} name="bulb-outline" size={22} />
+          </Box>
+        </HStack>
+
+        <VStack className="gap-2">
+          {steps.map((step) => (
+            <HStack key={step.title} className="items-center gap-3 rounded-2xl bg-white/75 px-3 py-2.5">
+              <Box className="h-9 w-9 items-center justify-center rounded-xl bg-viagens-lilac">
+                <Ionicons color={colors.primary} name={step.icon} size={18} />
+              </Box>
+              <VStack className="flex-1">
+                <Text className="text-[13px] font-black text-foreground">{step.title}</Text>
+                <Text className="text-[11px] font-semibold text-muted-foreground">{step.desc}</Text>
+              </VStack>
+            </HStack>
+          ))}
+        </VStack>
+
+        {!compact ? (
+          <HStack className="mt-4 gap-2">
+            <Pressable onPress={onCreateTrip} className="flex-1 items-center rounded-full bg-primary px-4 py-3">
+              <Text className="text-[13px] font-black text-white">Criar viagem</Text>
+            </Pressable>
+            <Pressable onPress={onOpenFefai} className="flex-1 items-center rounded-full bg-white px-4 py-3">
+              <Text className="text-[13px] font-black text-primary">Falar com FEFAI</Text>
+            </Pressable>
+          </HStack>
+        ) : null}
+      </LinearGradient>
+    </Box>
   )
 }
 
