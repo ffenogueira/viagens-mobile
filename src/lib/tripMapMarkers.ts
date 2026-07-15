@@ -82,11 +82,16 @@ export async function resolveTripMapMarkers(
     if (coords) {
       markers.push({
         id: place.id,
-        title: place.title,
+        title: place.placeName || place.title,
         latitude: coords.latitude,
         longitude: coords.longitude,
         order: index + 1,
-        dayLabel: place.dayTitle ?? place.dayDate
+        dayLabel: place.dayTitle ?? place.dayDate,
+        address: place.address ?? null,
+        description: place.description ?? null,
+        photoUrl: place.photoUrl ?? null,
+        timeLabel: place.timeLabel ?? place.startsAt?.slice(11, 16) ?? null,
+        category: place.type ?? null
       })
       continue
     }
@@ -95,11 +100,16 @@ export async function resolveTripMapMarkers(
       const offset = offsetAroundDestination(trip.latitude, trip.longitude, index)
       markers.push({
         id: place.id,
-        title: place.title,
+        title: place.placeName || place.title,
         latitude: offset.latitude,
         longitude: offset.longitude,
         order: index + 1,
-        dayLabel: place.dayTitle ?? place.dayDate
+        dayLabel: place.dayTitle ?? place.dayDate,
+        address: place.address ?? null,
+        description: place.description ?? null,
+        photoUrl: place.photoUrl ?? null,
+        timeLabel: place.timeLabel ?? place.startsAt?.slice(11, 16) ?? null,
+        category: place.type ?? null
       })
     }
   }

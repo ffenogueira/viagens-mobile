@@ -79,6 +79,7 @@ function AppContent() {
   const [createTripOpen, setCreateTripOpen] = useState(false)
   const [focusTripId, setFocusTripId] = useState<string | null>(null)
   const [workspaceToolsPanel, setWorkspaceToolsPanel] = useState<TripToolsPanel | null>(null)
+  const [workspaceAutoSuggest, setWorkspaceAutoSuggest] = useState(false)
   const [inviteToken, setInviteToken] = useState<string | null>(null)
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [i18nReady, setI18nReady] = useState(false)
@@ -294,6 +295,9 @@ function AppContent() {
       await loadTrips()
       setSelectedTrip(trip)
       setFocusTripId(trip.id)
+      setWorkspaceAutoSuggest(true)
+      setWorkspaceToolsPanel(null)
+      setOverlay('trip-workspace')
       setTab('today')
     } catch (error) {
       Alert.alert(
@@ -401,6 +405,7 @@ function AppContent() {
     setOverlay(null)
     setOverlayReturn(null)
     setWorkspaceToolsPanel(null)
+    setWorkspaceAutoSuggest(false)
   }
 
   function backFromOverlay() {
@@ -471,6 +476,8 @@ function AppContent() {
           <TripWorkspaceScreen
             trip={selectedTrip}
             initialToolsPanel={workspaceToolsPanel}
+            initialSuggestOpen={workspaceAutoSuggest}
+            onInitialSuggestHandled={() => setWorkspaceAutoSuggest(false)}
             onBack={closeOverlay}
             onNavigate={navigateFromTripWorkspace}
             onTripUpdated={handleTripUpdated}

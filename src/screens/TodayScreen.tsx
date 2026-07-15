@@ -573,45 +573,33 @@ function GuideTipCard({
   onCreateTrip: () => void
   onOpenFefai: () => void
 }) {
-  const steps = [
-    { icon: 'map-outline' as const, title: 'Crie a viagem', desc: 'Destino, datas e estilo do rolê.' },
-    { icon: 'sparkles' as const, title: 'Peça para a FEFAI', desc: 'Roteiro, custos e alertas com contexto.' },
-    { icon: 'people-outline' as const, title: 'Chame o grupo', desc: 'Convite, gastos, chat e fotos juntos.' }
-  ]
-
   return (
-    <Box className={`${compact ? 'mb-4' : 'mb-5'} overflow-hidden rounded-[28px] border border-[#EDE9FE] bg-white`} style={shadow}>
+    <Box className={`${compact ? 'mb-4' : 'mb-5'} overflow-hidden rounded-[24px] border border-[#EDE9FE] bg-white`} style={shadow}>
       <LinearGradient
         colors={['#FFFFFF', '#F6F0FF', '#ECFEFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ padding: 16 }}
+        style={{ padding: 14 }}
       >
-        <HStack className="mb-3 items-center justify-between">
+        <HStack className="items-center gap-3">
+          <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
+            <Ionicons color={colors.primary} name="sparkles" size={21} />
+          </Box>
           <VStack className="flex-1">
-            <Text className="text-[12px] font-black uppercase tracking-[1.2px] text-primary">Guia rápido</Text>
-            <Text className="mt-1 text-[18px] font-black leading-6 text-foreground">
-              Monte tudo sem virar planilha
+            <Text className="text-[12px] font-black uppercase tracking-[1.1px] text-primary">Dica rápida</Text>
+            <Text className="mt-0.5 text-[15px] font-black leading-5 text-foreground">
+              Crie a viagem e deixe a FEFAI sugerir os primeiros lugares.
+            </Text>
+            <Text className="mt-1 text-[11px] font-semibold leading-4 text-muted-foreground">
+              Depois você chama o grupo, divide gastos e guarda as fotos no mesmo espaço.
             </Text>
           </VStack>
-          <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
-            <Ionicons color={colors.primary} name="bulb-outline" size={22} />
-          </Box>
+          {compact ? (
+            <Pressable onPress={onOpenFefai} className="h-10 w-10 items-center justify-center rounded-full bg-white">
+              <Ionicons color={colors.primary} name="arrow-forward" size={18} />
+            </Pressable>
+          ) : null}
         </HStack>
-
-        <VStack className="gap-2">
-          {steps.map((step) => (
-            <HStack key={step.title} className="items-center gap-3 rounded-2xl bg-white/75 px-3 py-2.5">
-              <Box className="h-9 w-9 items-center justify-center rounded-xl bg-viagens-lilac">
-                <Ionicons color={colors.primary} name={step.icon} size={18} />
-              </Box>
-              <VStack className="flex-1">
-                <Text className="text-[13px] font-black text-foreground">{step.title}</Text>
-                <Text className="text-[11px] font-semibold text-muted-foreground">{step.desc}</Text>
-              </VStack>
-            </HStack>
-          ))}
-        </VStack>
 
         {!compact ? (
           <HStack className="mt-4 gap-2">

@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons'
 import * as WebBrowser from 'expo-web-browser'
 import React, { useMemo } from 'react'
-import { Linking, Modal, ScrollView, View } from 'react-native'
+import { Image, Linking, Modal, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
+import { WebView } from 'react-native-webview'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
-import type { LeafletMapMarker } from '../lib/buildLeafletMapHtml'
+import { buildLeafletMapHtml, type LeafletMapMarker } from '../lib/buildLeafletMapHtml'
 import { buildGoogleMapsUrl } from '../lib/staticMap'
-import { colors } from '../theme'
-import { TripMapCanvas } from './TripMapCanvas'
+import { colors, shadow } from '../theme'
 
 type TripMapModalProps = {
   visible: boolean
@@ -21,6 +21,10 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
   const { t } = useTranslation('trip')
   const insets = useSafeAreaInsets()
   const googleMapsUrl = useMemo(() => buildGoogleMapsUrl(markers), [markers])
+  const mapHtml = useMemo(
+    () => buildLeafletMapHtml({ markers, primaryColor: colors.primary, interactive: true }),
+    [markers]
+  )
 
   async function openInteractiveMap() {
     if (!googleMapsUrl) return
@@ -52,21 +56,31 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
 
         <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}>
           {markers.length ? (
-            <Box className="overflow-hidden rounded-b-[28px]">
-              <TripMapCanvas markers={markers} height={340} />
+            <Box className="overflow-hidden rounded-b-[28px] bg-[#EEF2FF]">
+              <WebView
+                originWhitelist={['*']}
+                source={{ html: mapHtml }}
+                style={{ height: 390, width: '100%', backgroundColor: '#EEF2FF' }}
+                javaScriptEnabled
+                domStorageEnabled
+                nestedScrollEnabled
+                mixedContentMode="always"
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+              />
             </Box>
           ) : null}
 
-          <VStack className="gap-3 px-5 pt-5">
-            <Box className="rounded-[24px] border border-[#EDE9FE] bg-white p-4">
+          <VStack className="gap-3 px-5 pt-4">
+            <Box className="rounded-[22px] border border-[#EDE9FE] bg-white px-4 py-3" style={shadow}>
               <HStack className="items-start gap-3">
-                <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-viagens-lilac">
-                  <Ionicons color={colors.primary} name="hand-left-outline" size={21} />
+                <Box className="h-10 w-10 items-center justify-center rounded-2xl bg-viagens-lilac">
+                  <Ionicons color={colors.primary} name="finger-print-outline" size={20} />
                 </Box>
                 <VStack className="flex-1">
-                  <Text className="text-[15px] font-black text-foreground">Quer mexer no mapa?</Text>
+                  <Text className="text-[14px] font-black text-foreground">Toque nos pins roxos</Text>
                   <Text className="mt-1 text-[12px] font-semibold leading-5 text-muted-foreground">
-                    Toque em “Abrir mapa interativo” para arrastar, dar zoom, ver distância e seguir a rota dentro do app.
+                    Arraste, aproxime e toque em cada número para ver foto, endereço, horário e distância.
                   </Text>
                 </VStack>
               </HStack>
@@ -81,16 +95,30 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
             {markers.map((marker) => (
               <HStack
                 key={marker.id}
-                className="items-center gap-3 rounded-[20px] border border-[#EEF2FF] bg-white px-4 py-3"
+                className="items-center gap-3 rounded-[22px] border border-[#EEF2FF] bg-white p-3"
+                style={shadow}
               >
-                <Box className="h-9 w-9 items-center justify-center rounded-full bg-primary">
-                  <Text className="text-[13px] font-black text-white">{marker.order}</Text>
-                </Box>
+                {marker.photoUrl ? (
+                  <Image source={{ uri: marker.photoUrl }} style={{ height: 64, width: 64, borderRadius: 18 }} />
+                ) : (
+                  <Box className="h-16 w-16 items-center justify-center rounded-[18px] bg-viagens-lilac">
+                    <Text className="text-[16px] font-black text-primary">{marker.order}</Text>
+                  </Box>
+                )}
                 <VStack className="flex-1">
-                  <Text className="text-[15px] font-black text-foreground">{marker.title}</Text>
-                  {marker.dayLabel ? (
-                    <Text className="text-[12px] font-semibold text-muted-foreground">{marker.dayLabel}</Text>
+                  <Text className="text-[15px] font-black leading-5 text-foreground" numberOfLines={2}>{marker.title}</Text>
+                  {marker.address ? (
+                    <Text className="mt-0.5 text-[11px] font-semibold text-muted-foreground" numberOfLines={1}>
+                      {marker.address}
+                    </Text>
+                  ) : marker.dayLabel ? (
+                    <Text className="mt-0.5 text-[11px] font-semibold text-muted-foreground">{marker.dayLabel}</Text>
                   ) : null}
+                  <HStack className="mt-2 flex-wrap gap-1.5">
+                    {marker.timeLabel ? <MapChip label={marker.timeLabel} icon="time-outline" /> : null}
+                    {marker.ratingLabel ? <MapChip label={marker.ratingLabel} icon="star-outline" /> : null}
+                    {marker.distanceLabel ? <MapChip label={marker.distanceLabel} icon="navigate-outline" /> : null}
+                  </HStack>
                 </VStack>
                 <Pressable
                   onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${marker.latitude},${marker.longitude}`)}
@@ -102,10 +130,10 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
             ))}
 
             {googleMapsUrl ? (
-              <Pressable onPress={() => void openInteractiveMap()} className="mt-2 h-14 items-center justify-center rounded-full bg-primary">
+              <Pressable onPress={() => void openInteractiveMap()} className="mt-2 h-12 items-center justify-center rounded-full bg-[#F3E8FF]">
                 <HStack className="items-center gap-2">
-                  <Ionicons color={colors.white} name="map-outline" size={18} />
-                  <Text className="text-[16px] font-black text-white">Abrir mapa interativo</Text>
+                  <Ionicons color={colors.primary} name="map-outline" size={17} />
+                  <Text className="text-[14px] font-black text-primary">Abrir rota no Google Maps</Text>
                 </HStack>
               </Pressable>
             ) : null}
@@ -113,5 +141,22 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
         </ScrollView>
       </View>
     </Modal>
+  )
+}
+
+function MapChip({
+  icon,
+  label
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+}) {
+  return (
+    <HStack className="items-center gap-1 rounded-full bg-[#F8FAFC] px-2 py-1">
+      <Ionicons color={colors.primary} name={icon} size={12} />
+      <Text className="text-[10px] font-black text-primary" numberOfLines={1}>
+        {label}
+      </Text>
+    </HStack>
   )
 }

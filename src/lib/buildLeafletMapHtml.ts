@@ -5,6 +5,13 @@ export type LeafletMapMarker = {
   longitude: number
   order: number
   dayLabel?: string
+  address?: string | null
+  description?: string | null
+  photoUrl?: string | null
+  timeLabel?: string | null
+  category?: string | null
+  ratingLabel?: string | null
+  distanceLabel?: string | null
 }
 
 type BuildLeafletMapHtmlOptions = {
@@ -36,17 +43,55 @@ export function buildLeafletMapHtml({
       html, body, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #eef2ff; }
       .leaflet-control-attribution { font-size: 9px; }
       .trip-marker {
-        width: 30px;
-        height: 30px;
+        width: 34px;
+        height: 34px;
         border-radius: 999px;
         background: ${primaryColor};
         color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
-        font: 800 13px/1 system-ui, -apple-system, sans-serif;
-        border: 2px solid #fff;
+        font: 900 14px/1 system-ui, -apple-system, sans-serif;
+        border: 3px solid #fff;
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+      }
+      .trip-popup {
+        width: 230px;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .trip-popup img {
+        width: 100%;
+        height: 104px;
+        object-fit: cover;
+        border-radius: 16px;
+        margin-bottom: 10px;
+      }
+      .trip-popup strong {
+        display: block;
+        color: #111827;
+        font-size: 15px;
+        line-height: 19px;
+        margin-bottom: 4px;
+      }
+      .trip-popup .meta {
+        color: #64748B;
+        font-size: 12px;
+        line-height: 17px;
+        margin-top: 3px;
+      }
+      .trip-popup .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 9px;
+      }
+      .trip-popup .chip {
+        border-radius: 999px;
+        background: #F3E8FF;
+        color: ${primaryColor};
+        font-size: 11px;
+        font-weight: 800;
+        padding: 5px 8px;
       }
     </style>
   </head>
@@ -70,11 +115,18 @@ export function buildLeafletMapHtml({
         attribution: '&copy; OpenStreetMap'
       }).addTo(map);
 
+      const escapeHtml = (value) => String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
       const iconFor = (order) => L.divIcon({
         className: '',
         html: '<div class="trip-marker">' + order + '</div>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
       });
 
       const placed = [];
@@ -82,8 +134,27 @@ export function buildLeafletMapHtml({
         const point = L.marker([marker.latitude, marker.longitude], {
           icon: iconFor(marker.order)
         }).addTo(map);
-        const subtitle = marker.dayLabel ? '<br/><span style="opacity:.75;font-size:12px">' + marker.dayLabel + '</span>' : '';
-        point.bindPopup('<strong>' + marker.title + '</strong>' + subtitle);
+        const image = marker.photoUrl ? '<img src="' + escapeHtml(marker.photoUrl) + '" />' : '';
+        const address = marker.address ? '<div class="meta">📍 ' + escapeHtml(marker.address) + '</div>' : '';
+        const day = marker.dayLabel ? '<div class="meta">🗓 ' + escapeHtml(marker.dayLabel) + '</div>' : '';
+        const description = marker.description ? '<div class="meta">' + escapeHtml(marker.description) + '</div>' : '';
+        const chips = [
+          marker.timeLabel ? '🕒 ' + marker.timeLabel : '',
+          marker.ratingLabel ? '⭐ ' + marker.ratingLabel : '',
+          marker.distanceLabel ? '↔ ' + marker.distanceLabel : '',
+          marker.category || ''
+        ].filter(Boolean).map((chip) => '<span class="chip">' + escapeHtml(chip) + '</span>').join('');
+        point.bindPopup(
+          '<div class="trip-popup">' +
+            image +
+            '<strong>' + escapeHtml(marker.title) + '</strong>' +
+            address +
+            day +
+            description +
+            (chips ? '<div class="chips">' + chips + '</div>' : '') +
+          '</div>',
+          { maxWidth: 260 }
+        );
         placed.push(point);
       });
 

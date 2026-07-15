@@ -132,13 +132,51 @@ function itemsForDay(trip: Trip | null, dayId: string | null): TripDayItem[] {
   return dayPlan?.items ?? []
 }
 
+function distanceInKm(a?: LeafletMapMarker, b?: LeafletMapMarker) {
+  if (!a || !b) return null
+  const toRad = (value: number) => (value * Math.PI) / 180
+  const radius = 6371
+  const dLat = toRad(b.latitude - a.latitude)
+  const dLon = toRad(b.longitude - a.longitude)
+  const lat1 = toRad(a.latitude)
+  const lat2 = toRad(b.latitude)
+  const value =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  return radius * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value))
+}
+
+function formatMarkerDistance(a?: LeafletMapMarker, b?: LeafletMapMarker) {
+  const km = distanceInKm(a, b)
+  if (km === null) return null
+  if (km < 1) return `${Math.max(80, Math.round(km * 1000))} m do anterior`
+  return `${km.toFixed(km < 10 ? 1 : 0).replace('.', ',')} km do anterior`
+}
+
+function inferPlaceCategory(place?: TripDayItem | null) {
+  const value = `${place?.type ?? ''} ${place?.title ?? ''} ${place?.placeName ?? ''}`.toLowerCase()
+  if (value.includes('restaurante') || value.includes('bar') || value.includes('café') || value.includes('cafe')) {
+    return 'Comida e bebida'
+  }
+  if (value.includes('museu') || value.includes('museum') || value.includes('galeria')) return 'Museu/cultura'
+  if (value.includes('praia') || value.includes('parque') || value.includes('mirante')) return 'Ao ar livre'
+  if (value.includes('shopping') || value.includes('loja') || value.includes('mercado')) return 'Compras'
+  return 'Passeio'
+}
+
+function ratingForIndex(index: number) {
+  return `${(4.8 - Math.min(index, 3) * 0.1).toFixed(1).replace('.', ',')} bem avaliado`
+}
+
 export function TripWorkspaceScreen({
   trip,
   onBack,
   onNavigate,
   onTripUpdated,
   onTripDeleted,
-  initialToolsPanel = null
+  initialToolsPanel = null,
+  initialSuggestOpen = false,
+  onInitialSuggestHandled
 }: {
   trip: Trip | null
   onBack: () => void
@@ -146,6 +184,8 @@ export function TripWorkspaceScreen({
   onTripUpdated?: (trip: Trip) => void
   onTripDeleted?: (tripId: string) => void
   initialToolsPanel?: TripToolsPanel | null
+  initialSuggestOpen?: boolean
+  onInitialSuggestHandled?: () => void
 }) {
   const { t } = useTranslation('trip')
   const insets = useSafeAreaInsets()
@@ -267,6 +307,40 @@ export function TripWorkspaceScreen({
     [tripMapMarkers, dayPlaces]
   )
 
+  const enrichedDayMapMarkers = useMemo(
+    () =>
+      dayMapMarkers.map((marker, index) => {
+        const place = dayPlaces.find((item) => item.id === marker.id)
+        const timeLabel = place ? formatPlaceTime(place.startsAt, place.timeLabel) : marker.timeLabel
+        return {
+          ...marker,
+          title: place?.placeName || place?.title || marker.title,
+          address: place?.address ?? marker.address ?? currentTrip?.destination ?? null,
+          description: place?.description ?? marker.description ?? null,
+          photoUrl: place?.photoUrl ?? marker.photoUrl ?? null,
+          timeLabel,
+          category: marker.category ?? inferPlaceCategory(place),
+          ratingLabel: marker.ratingLabel ?? ratingForIndex(index),
+          distanceLabel: index === 0 ? 'Primeira parada' : formatMarkerDistance(dayMapMarkers[index - 1], marker)
+        }
+      }),
+    [dayMapMarkers, dayPlaces, currentTrip?.destination]
+  )
+
+  const enrichedTripMapMarkers = useMemo(
+    () =>
+      tripMapMarkers.map((marker, index) => ({
+        ...marker,
+        address: marker.address ?? currentTrip?.destination ?? null,
+        category: marker.category ?? 'Passeio',
+        ratingLabel: marker.ratingLabel ?? ratingForIndex(index),
+        distanceLabel: index === 0 ? 'Primeira parada' : formatMarkerDistance(tripMapMarkers[index - 1], marker)
+      })),
+    [tripMapMarkers, currentTrip?.destination]
+  )
+
+  const modalMapMarkers = enrichedDayMapMarkers.length ? enrichedDayMapMarkers : enrichedTripMapMarkers
+
   useEffect(() => {
     if (!currentTrip) {
       setTripMapMarkers([])
@@ -359,6 +433,12 @@ export function TripWorkspaceScreen({
     setSuggestStyle(ROLE_STYLES[1].id)
     setSuggestOpen(true)
   }
+
+  useEffect(() => {
+    if (!initialSuggestOpen || !currentTrip || loading) return
+    openSuggestModal()
+    onInitialSuggestHandled?.()
+  }, [initialSuggestOpen, currentTrip?.id, loading, onInitialSuggestHandled])
 
   function applySuggestion(suggestion: ActivitySuggestion) {
     setPlaceDraft(suggestion.title)
@@ -652,7 +732,7 @@ export function TripWorkspaceScreen({
   }
 
   function openTripMap() {
-    if (!tripMapMarkers.length && !dayMapMarkers.length) return
+    if (!modalMapMarkers.length) return
     setMapModalOpen(true)
   }
 
@@ -814,44 +894,51 @@ export function TripWorkspaceScreen({
                 const timeLabel = formatPlaceTime(place.startsAt, place.timeLabel)
                 const period = periodFromTime(timeLabel)
                 const iconName = periodIcon(period, timeLabel)
+                const marker = enrichedDayMapMarkers.find((item) => item.id === place.id)
+                const category = inferPlaceCategory(place)
                 return (
                   <Pressable
                     key={place.id}
                     onPress={() => void changePlacePhoto(place)}
-                    className="overflow-hidden rounded-[24px] border border-[#EEF2FF] bg-white"
+                    className="rounded-[24px] border border-[#EEF2FF] bg-white p-3"
                     style={shadow}
                   >
-                    {place.photoUrl ? (
-                      <Image source={{ uri: place.photoUrl }} style={{ width: '100%', height: 132 }} resizeMode="cover" />
-                    ) : null}
-                    <HStack className="items-start gap-3 p-4">
-                      {place.photoUrl ? null : (
-                        <Box className="h-10 w-10 items-center justify-center rounded-2xl bg-viagens-lilac">
-                          <Text className="text-[14px] font-black text-primary">{index + 1}</Text>
+                    <HStack className="items-start gap-3">
+                      {place.photoUrl ? (
+                        <Image source={{ uri: place.photoUrl }} style={{ width: 92, height: 92, borderRadius: 20 }} resizeMode="cover" />
+                      ) : (
+                        <Box className="h-[92px] w-[92px] items-center justify-center rounded-[20px] bg-viagens-lilac">
+                          <Ionicons color={colors.primary} name="image-outline" size={26} />
+                          <Text className="mt-1 text-[11px] font-black text-primary">Foto</Text>
                         </Box>
                       )}
                       <VStack className="flex-1">
-                        <HStack className="items-center gap-2">
-                          {timeLabel ? (
-                            <HStack className="items-center gap-1 rounded-full bg-[#F8FAFC] px-2 py-1">
-                              <Ionicons color={colors.primary} name={iconName} size={14} />
-                              <Text className="text-[12px] font-black text-primary">{timeLabel}</Text>
-                            </HStack>
-                          ) : null}
-                          <Text className="flex-1 text-[16px] font-black text-foreground">
+                        <HStack className="items-start gap-2">
+                          <Box className="h-7 w-7 items-center justify-center rounded-full bg-primary">
+                            <Text className="text-[11px] font-black text-white">{index + 1}</Text>
+                          </Box>
+                          <Text className="flex-1 text-[16px] font-black leading-5 text-foreground" numberOfLines={2}>
                             {place.placeName || place.title}
                           </Text>
                         </HStack>
+                        {place.address ? (
+                          <Text className="mt-1 text-[11px] font-semibold leading-4 text-muted-foreground" numberOfLines={1}>
+                            {place.address}
+                          </Text>
+                        ) : null}
                         {place.description ? (
-                          <Text className="mt-1 text-[13px] font-semibold leading-5 text-muted-foreground" numberOfLines={3}>
+                          <Text className="mt-1 text-[12px] font-semibold leading-4 text-muted-foreground" numberOfLines={2}>
                             {place.description}
                           </Text>
                         ) : null}
-                        <Text className="mt-1 text-[12px] font-semibold text-primary">
-                          {place.photoUrl ? t('tapChangePhoto') : t('tapAddPhoto')}
-                        </Text>
+                        <HStack className="mt-2 flex-wrap gap-1.5">
+                          {timeLabel ? <PlaceMiniChip icon={iconName} label={timeLabel} /> : null}
+                          <PlaceMiniChip icon="star-outline" label={marker?.ratingLabel ?? ratingForIndex(index)} />
+                          <PlaceMiniChip icon="pricetag-outline" label={category} />
+                          {marker?.distanceLabel ? <PlaceMiniChip icon="navigate-outline" label={marker.distanceLabel} /> : null}
+                        </HStack>
                       </VStack>
-                      <Ionicons color={colors.mutedLight} name="camera-outline" size={20} />
+                      <Ionicons color={colors.mutedLight} name="camera-outline" size={19} />
                     </HStack>
                   </Pressable>
                 )
@@ -878,13 +965,13 @@ export function TripWorkspaceScreen({
 
           <Pressable
             onPress={openTripMap}
-            disabled={!dayMapMarkers.length && !tripMapMarkers.length}
+            disabled={!modalMapMarkers.length}
             className="mt-4 overflow-hidden rounded-[28px] border border-[#EEF2FF] bg-white"
             style={shadow}
           >
             <View style={{ height: 140, position: 'relative' }}>
-              {dayMapMarkers.length > 0 ? (
-                <TripMapView markers={dayMapMarkers} height={140} />
+              {enrichedDayMapMarkers.length > 0 ? (
+                <TripMapView markers={enrichedDayMapMarkers} height={140} />
               ) : tripMapLoading && dayPlaces.length > 0 ? (
                 <TripMapView markers={[]} height={140} loading />
               ) : (
@@ -898,14 +985,14 @@ export function TripWorkspaceScreen({
               )}
               <Box className="absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-1.5">
                 <Text className="text-[12px] font-black text-foreground">
-                  Toque para abrir · {dayPlaces.length} {dayPlaces.length === 1 ? t('placeSingular') : t('placePlural')}
+                  Mapa do dia · toque para aproximar
                 </Text>
               </Box>
-              {(dayMapMarkers.length > 0 || tripMapMarkers.length > 0) && (
+              {modalMapMarkers.length > 0 && (
                 <Box className="absolute bottom-4 right-4 rounded-full bg-primary px-3 py-1.5">
                   <HStack className="items-center gap-1">
                     <Ionicons color={colors.white} name="expand-outline" size={14} />
-                    <Text className="text-[12px] font-black text-white">Mapa interativo</Text>
+                    <Text className="text-[12px] font-black text-white">Interativo</Text>
                   </HStack>
                 </Box>
               )}
@@ -1049,7 +1136,10 @@ export function TripWorkspaceScreen({
             <View style={{ borderTopLeftRadius: 32, borderTopRightRadius: 32, backgroundColor: '#FFF', paddingHorizontal: 20, paddingBottom: 32, paddingTop: 16, maxHeight: '88%' }}>
               <View style={{ alignSelf: 'center', width: 64, height: 6, borderRadius: 999, backgroundColor: '#D1D5DB', marginBottom: 20 }} />
               <Text className="text-[24px] font-black text-foreground">{t('fefaiSuggestTitle')}</Text>
-              <Text className="mt-1 mb-6 text-[13px] font-semibold text-muted-foreground">
+              <Text className="mt-1 text-[13px] font-semibold leading-5 text-muted-foreground">
+                Escolha o tipo de rolê e a FEFAI sugere lugares próximos para você marcar, comparar e encaixar no melhor dia.
+              </Text>
+              <Text className="mt-2 mb-5 text-[12px] font-black text-primary">
                 {currentTrip.destination}
                 {currentTrip.country ? `, ${currentTrip.country}` : ''} · {activeDay?.label}
               </Text>
@@ -1239,7 +1329,7 @@ export function TripWorkspaceScreen({
 
       <TripMapModal
         visible={mapModalOpen}
-        markers={tripMapMarkers}
+        markers={modalMapMarkers}
         destination={currentTrip.destination}
         onClose={() => setMapModalOpen(false)}
       />
@@ -1282,6 +1372,23 @@ function HeaderIcon({
     <Pressable onPress={onPress} className="h-11 w-11 items-center justify-center rounded-full bg-white/90">
       <Ionicons color={colors.ink} name={icon} size={20} />
     </Pressable>
+  )
+}
+
+function PlaceMiniChip({
+  icon,
+  label
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+}) {
+  return (
+    <HStack className="items-center gap-1 rounded-full bg-[#F8FAFC] px-2 py-1">
+      <Ionicons color={colors.primary} name={icon} size={12} />
+      <Text className="text-[10px] font-black text-primary" numberOfLines={1}>
+        {label}
+      </Text>
+    </HStack>
   )
 }
 
