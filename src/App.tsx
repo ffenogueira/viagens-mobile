@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons'
-import React, { useEffect, useState } from 'react'
-import { ActivityIndicator, Alert, Linking, Modal, StatusBar } from 'react-native'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, Linking, Modal, StatusBar, View } from 'react-native'
 import * as SecureStore from 'expo-secure-store'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { useTranslation } from 'react-i18next'
 import { Box, GluestackUIProvider, HStack, Pressable, Text, VStack } from '../components/ui'
 import {
   AuthUser,
@@ -25,6 +26,8 @@ import {
 import { CreateTripSheet, type CreateTripInput } from './components/CreateTripSheet'
 import { InviteAcceptModal } from './components/InviteAcceptModal'
 import { FloatingTabBar } from './components/FloatingTabBar'
+import { HomeCoachTour, type HomeTourTargetRefs } from './components/HomeCoachTour'
+import { LanguageSheet } from './components/LanguageSheet'
 import { QuickCreateMenu } from './components/QuickCreateMenu'
 import { ScreenHeader } from './components/ScreenHeader'
 import { GuestScreen } from './screens/GuestScreen'
@@ -45,6 +48,16 @@ import { LOCALE_OPTIONS, type AppLocale } from './i18n/types'
 import type { NavigationTarget, OverlayScreen, Tab, Trip, TripHomeShortcut, TripToolsPanel } from './types/trip'
 
 const PENDING_INVITE_KEY = 'viagens_pending_invite'
+const HOME_TOUR_VERSION = 'home-tour-v3'
+const FIRST_LOGIN_LANGUAGE_VERSION = 'first-login-language-v1'
+
+function homeTourStorageKey(userId: string) {
+  return `viagens_${HOME_TOUR_VERSION}_${userId}`
+}
+
+function firstLoginLanguageStorageKey(userId: string) {
+  return `viagens_${FIRST_LOGIN_LANGUAGE_VERSION}_${userId}`
+}
 
 function isTab(target: NavigationTarget): target is Tab {
   return (
@@ -84,10 +97,67 @@ function AppContent() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
   const [i18nReady, setI18nReady] = useState(false)
   const [postSignupOpen, setPostSignupOpen] = useState(false)
+  const [languageSheetOpen, setLanguageSheetOpen] = useState(false)
+  const [activeLocale, setActiveLocale] = useState<AppLocale>(getActiveLocale())
+  const [languagePromptCheckedFor, setLanguagePromptCheckedFor] = useState<string | null>(null)
+  const [homeTourOpen, setHomeTourOpen] = useState(false)
+  const [homeTourCheckedFor, setHomeTourCheckedFor] = useState<string | null>(null)
+  const tourCreateRef = useRef<View>(null)
+  const tourUtilitiesRef = useRef<View>(null)
+  const tourMemoriesRef = useRef<View>(null)
+  const homeTourTargets = useMemo<HomeTourTargetRefs>(
+    () => ({
+      create: tourCreateRef,
+      utilities: tourUtilitiesRef,
+      memories: tourMemoriesRef
+    }),
+    []
+  )
 
   async function applyUserLocale(locale?: string | null) {
     if (!locale) return
     await changeAppLocale(locale as AppLocale)
+    setActiveLocale(getActiveLocale())
+  }
+
+  async function handleLocaleChange(locale: AppLocale) {
+    setActiveLocale(locale)
+    setUser((current) => (current ? { ...current, locale } : current))
+    try {
+      await updateUserLocale(locale)
+    } catch {
+      // O LanguagePicker já persistiu a preferência no aparelho.
+    }
+    await markFirstLoginLanguageSeen()
+  }
+
+  async function markFirstLoginLanguageSeen() {
+    if (user?.id) {
+      await SecureStore.setItemAsync(firstLoginLanguageStorageKey(user.id), '1')
+    }
+  }
+
+  async function closeFirstLoginLanguage() {
+    setLanguageSheetOpen(false)
+    await markFirstLoginLanguageSeen()
+  }
+
+  async function closePostSignup() {
+    setPostSignupOpen(false)
+    await markFirstLoginLanguageSeen()
+  }
+
+  async function finishHomeTour() {
+    setHomeTourOpen(false)
+    if (user?.id) {
+      await SecureStore.setItemAsync(homeTourStorageKey(user.id), '1')
+    }
+  }
+
+  function replayHomeTour() {
+    setOverlay(null)
+    setTab('today')
+    setTimeout(() => setHomeTourOpen(true), 260)
   }
 
   async function persistInviteToken(token: string) {
@@ -170,6 +240,62 @@ function AppContent() {
     return () => subscription.remove()
   }, [session, inviteToken])
 
+  useEffect(() => {
+    if (
+      session !== 'authenticated' ||
+      !user?.id ||
+      postSignupOpen ||
+      languagePromptCheckedFor === user.id
+    ) {
+      return
+    }
+
+    let cancelled = false
+    setLanguagePromptCheckedFor(user.id)
+
+    void SecureStore.getItemAsync(firstLoginLanguageStorageKey(user.id)).then((seen) => {
+      if (!cancelled && seen !== '1') {
+        setActiveLocale(getActiveLocale())
+        setLanguageSheetOpen(true)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [session, user?.id, postSignupOpen, languagePromptCheckedFor])
+
+  useEffect(() => {
+    if (
+      session !== 'authenticated' ||
+      !user?.id ||
+      postSignupOpen ||
+      languageSheetOpen ||
+      languagePromptCheckedFor !== user.id ||
+      overlay ||
+      tab !== 'today' ||
+      homeTourCheckedFor === user.id
+    ) {
+      return
+    }
+
+    let cancelled = false
+    let openTimer: ReturnType<typeof setTimeout> | null = null
+    setHomeTourCheckedFor(user.id)
+
+    void SecureStore.getItemAsync(homeTourStorageKey(user.id)).then((seen) => {
+      if (cancelled || seen === '1') return
+      openTimer = setTimeout(() => {
+        if (!cancelled) setHomeTourOpen(true)
+      }, 650)
+    })
+
+    return () => {
+      cancelled = true
+      if (openTimer) clearTimeout(openTimer)
+    }
+  }, [session, user?.id, postSignupOpen, languageSheetOpen, languagePromptCheckedFor, overlay, tab, homeTourCheckedFor])
+
   async function loadTrips() {
     try {
       const data = await fetchTrips()
@@ -208,7 +334,7 @@ function AppContent() {
         : await register(trimmedName, trimmedEmail, password)
 
       if (!authSession.user?.id || !authSession.user?.email) {
-        throw new Error('Resposta de autenticação inválida.')
+        throw new Error(i18n.t('invalidAuthResponse', { ns: 'errors' }))
       }
 
       setUser(authSession.user)
@@ -242,7 +368,7 @@ function AppContent() {
       const authSession = await loginWithSocial(credential.provider, credential.idToken)
 
       if (!authSession.user?.id || !authSession.user?.email) {
-        throw new Error('Resposta de autenticação social inválida.')
+        throw new Error(i18n.t('invalidSocialAuthResponse', { ns: 'errors' }))
       }
 
       setUser(authSession.user)
@@ -285,6 +411,10 @@ function AppContent() {
     setUser(null)
     setTrips([])
     setSelectedTrip(null)
+    setLanguageSheetOpen(false)
+    setLanguagePromptCheckedFor(null)
+    setHomeTourOpen(false)
+    setHomeTourCheckedFor(null)
     setSession('guest')
   }
 
@@ -465,7 +595,7 @@ function AppContent() {
         <ScreenHeader
           user={user}
           destination={tab === 'today' ? undefined : destination}
-          onLogout={tab === 'profile' ? undefined : () => setTab('profile')}
+          onProfilePress={() => setTab('profile')}
           onNotificationPress={() => setNotificationSheetOpen(true)}
           showNotification={tab !== 'profile'}
         />
@@ -519,7 +649,12 @@ function AppContent() {
             )}
             {tab === 'memories' && <MemoriesScreen selectedTrip={selectedTrip} />}
             {tab === 'profile' && (
-              <ProfileScreen user={user} tripCount={trips.length} onLogout={logout} />
+              <ProfileScreen
+                user={user}
+                tripCount={trips.length}
+                onLogout={logout}
+                onReplayTour={replayHomeTour}
+              />
             )}
           </>
         )}
@@ -529,6 +664,11 @@ function AppContent() {
         active={tab}
         onChange={setTab}
         onCreatePress={() => setQuickCreateOpen(true)}
+        tourTargetRefs={{
+          create: tourCreateRef,
+          utilities: tourUtilitiesRef,
+          memories: tourMemoriesRef
+        }}
       />
       <QuickCreateMenu
         visible={quickCreateOpen}
@@ -540,7 +680,7 @@ function AppContent() {
       <CreateTripSheet
         visible={createTripOpen}
         loading={loading}
-        firstName={user?.name?.split(' ')[0] || 'viajante'}
+        firstName={user?.name?.split(' ')[0] || i18n.t('traveler', { ns: 'common' })}
         onClose={() => setCreateTripOpen(false)}
         onSubmit={(input) => {
           setCreateTripOpen(false)
@@ -554,14 +694,25 @@ function AppContent() {
       <PostSignupSetupModal
         visible={postSignupOpen}
         user={user}
-        onClose={() => setPostSignupOpen(false)}
+        onClose={() => void closePostSignup()}
         onCreateTrip={() => {
-          setPostSignupOpen(false)
-          setCreateTripOpen(true)
+          void closePostSignup().then(() => setCreateTripOpen(true))
         }}
         onLocaleChanged={(locale) => {
+          setActiveLocale(locale)
           setUser((current) => (current ? { ...current, locale } : current))
         }}
+      />
+      <LanguageSheet
+        visible={languageSheetOpen}
+        value={activeLocale}
+        onClose={() => void closeFirstLoginLanguage()}
+        onChange={(locale) => void handleLocaleChange(locale)}
+      />
+      <HomeCoachTour
+        visible={homeTourOpen && !languageSheetOpen && !postSignupOpen}
+        targets={homeTourTargets}
+        onClose={() => void finishHomeTour()}
       />
       {session === 'authenticated' ? (
         <InviteAcceptModal
@@ -593,27 +744,28 @@ function PostSignupSetupModal({
   onCreateTrip: () => void
   onLocaleChanged: (locale: AppLocale) => void
 }) {
+  const { t } = useTranslation('onboarding')
   const [locale, setLocale] = useState<AppLocale>(getActiveLocale())
   const steps = [
     {
       icon: 'language-outline' as const,
-      title: 'Escolha o idioma',
-      desc: 'O app, datas e mensagens ficam no idioma que você usa para viajar.'
+      title: t('setupLanguageTitle'),
+      desc: t('setupLanguageDescription')
     },
     {
       icon: 'location-outline' as const,
-      title: 'Conte seu próximo destino',
-      desc: 'A FEFAI usa destino, datas e estilo para sugerir roteiro de verdade.'
+      title: t('setupDestinationTitle'),
+      desc: t('setupDestinationDescription')
     },
     {
       icon: 'people-outline' as const,
-      title: 'Convide quem vai junto',
-      desc: 'Grupo, gastos, chat, checklist e fotos ficam no mesmo espaço.'
+      title: t('setupGroupTitle'),
+      desc: t('setupGroupDescription')
     },
     {
       icon: 'navigate-outline' as const,
-      title: 'Ative quando estiver viajando',
-      desc: 'Check-ins e mapa vivido só funcionam com consentimento e podem ser pausados.'
+      title: t('setupLocationTitle'),
+      desc: t('setupLocationDescription')
     }
   ]
 
@@ -637,13 +789,13 @@ function PostSignupSetupModal({
           <HStack className="items-start justify-between gap-3">
             <VStack className="flex-1">
               <Text className="text-[12px] font-black uppercase tracking-[1.4px] text-primary">
-                Primeiro setup
+                {t('setupKicker')}
               </Text>
               <Text className="mt-1 text-[28px] font-black leading-[33px] text-foreground">
-                Vamos deixar sua viagem com a sua cara
+                {t('setupTitle')}
               </Text>
               <Text className="mt-2 text-[14px] font-semibold leading-6 text-muted-foreground">
-                Leva menos de um minuto. Depois você já pode criar viagem, chamar amigos e usar a FEFAI.
+                {t('setupSubtitle')}
               </Text>
             </VStack>
             <Pressable onPress={onClose} className="h-10 w-10 items-center justify-center rounded-full bg-[#F8FAFC]">
@@ -689,11 +841,11 @@ function PostSignupSetupModal({
           <Pressable onPress={onCreateTrip} className="mt-6 h-14 items-center justify-center rounded-full bg-primary">
             <HStack className="items-center gap-2">
               <Ionicons color={colors.white} name="airplane" size={18} />
-              <Text className="text-[16px] font-black text-white">Criar minha primeira viagem</Text>
+              <Text className="text-[16px] font-black text-white">{t('setupCreateTrip')}</Text>
             </HStack>
           </Pressable>
           <Pressable onPress={onClose} className="mt-4 items-center">
-            <Text className="text-[14px] font-black text-muted-foreground">Agora não</Text>
+            <Text className="text-[14px] font-black text-muted-foreground">{t('notNow')}</Text>
           </Pressable>
         </Box>
       </Box>
@@ -708,21 +860,22 @@ function NotificationSheet({
   visible: boolean
   onClose: () => void
 }) {
+  const { t } = useTranslation('onboarding')
   const items = [
     {
       icon: 'airplane-outline' as const,
-      title: 'Convites de viagem',
-      desc: 'Saiba na hora quando alguém te chamar para planejar junto.'
+      title: t('notificationInvitesTitle'),
+      desc: t('notificationInvitesDescription')
     },
     {
       icon: 'checkmark-done-outline' as const,
-      title: 'Tarefas e reservas',
-      desc: 'Passaporte, seguro, hospedagem e pendências sem se perder.'
+      title: t('notificationTasksTitle'),
+      desc: t('notificationTasksDescription')
     },
     {
       icon: 'location-outline' as const,
-      title: 'Check-ins do grupo',
-      desc: 'Atualizações importantes durante a viagem, com consentimento.'
+      title: t('notificationCheckinsTitle'),
+      desc: t('notificationCheckinsDescription')
     }
   ]
 
@@ -735,10 +888,10 @@ function NotificationSheet({
             <Ionicons color={colors.primary} name="notifications" size={42} />
           </Box>
           <Text className="text-center text-[28px] font-black text-foreground">
-            Fique por dentro da viagem
+            {t('notificationTitle')}
           </Text>
           <Text className="mt-2 text-center text-[14px] font-semibold leading-6 text-muted-foreground">
-            Notificações para o que importa: convite, tarefa, roteiro, check-in e mudança de plano.
+            {t('notificationSubtitle')}
           </Text>
 
           <VStack className="mt-6 rounded-[28px] bg-[#F8FAFC] p-4">
@@ -761,10 +914,10 @@ function NotificationSheet({
             onPress={onClose}
             className="mt-6 h-14 items-center justify-center rounded-full bg-primary"
           >
-            <Text className="text-[16px] font-black text-white">Entendi</Text>
+            <Text className="text-[16px] font-black text-white">{t('tourFinish')}</Text>
           </Pressable>
           <Pressable onPress={onClose} className="mt-4 items-center">
-            <Text className="text-[14px] font-bold text-muted-foreground">Depois eu vejo</Text>
+            <Text className="text-[14px] font-bold text-muted-foreground">{t('later')}</Text>
           </Pressable>
         </Box>
       </Box>

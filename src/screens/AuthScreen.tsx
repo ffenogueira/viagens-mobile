@@ -232,7 +232,7 @@ export function AuthScreen({
           </Text>
 
           <HStack className="mt-5 flex-wrap gap-2">
-            {['FEFAI', 'OCR', 'Grupo', 'Fotos originais'].map((item) => (
+            {[t('featureFefai'), t('featureOcr'), t('featureGroup'), t('featureOriginalPhotos')].map((item) => (
               <Box key={item} className="rounded-full bg-viagens-lilac px-3 py-1.5">
                 <Text className="text-[11px] font-black text-primary">{item}</Text>
               </Box>

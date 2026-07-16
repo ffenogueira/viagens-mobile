@@ -68,5 +68,6 @@
   "selectDate": "Seleccionar fecha",
   "tapDesiredDay": "Toca el día deseado",
   "helloName": "Hola, {{name}}",
-  "yourTravelWorkspace": "Tu workspace de viajes"
+  "yourTravelWorkspace": "Tu workspace de viajes",
+  "changeLanguage": "Cambiar idioma"
 }

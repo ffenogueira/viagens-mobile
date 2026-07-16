@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
-import React, { useMemo } from 'react'
+import React, { useMemo, type RefObject } from 'react'
 import { View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Box, HStack, Pressable, Text } from '../../components/ui'
 import { colors, shadowStrong } from '../theme'
 import type { Tab } from '../types/trip'
+import type { HomeTourTargetRefs } from './HomeCoachTour'
 
 type TabItem = {
   id: Tab
@@ -26,32 +27,38 @@ function TabButton({
   tab,
   label,
   active,
-  onChange
+  onChange,
+  targetRef
 }: {
   tab: TabItem
   label: string
   active: boolean
   onChange: (tab: Tab) => void
+  targetRef?: RefObject<View | null>
 }) {
   return (
-    <Pressable
-      className={`min-w-[56px] flex-1 flex-row items-center justify-center gap-2 rounded-full py-3 ${active ? 'bg-primary px-4' : 'px-3'}`}
-      onPress={() => onChange(tab.id)}
-    >
-      <Ionicons color={active ? '#FFFFFF' : colors.muted} name={tab.icon} size={22} />
-      {active ? <Text className="text-sm font-black text-white">{label}</Text> : null}
-    </Pressable>
+    <View ref={targetRef} collapsable={false} style={{ flex: 1 }}>
+      <Pressable
+        className={`min-w-[56px] flex-1 flex-row items-center justify-center gap-2 rounded-full py-3 ${active ? 'bg-primary px-4' : 'px-3'}`}
+        onPress={() => onChange(tab.id)}
+      >
+        <Ionicons color={active ? '#FFFFFF' : colors.muted} name={tab.icon} size={22} />
+        {active ? <Text className="text-sm font-black text-white">{label}</Text> : null}
+      </Pressable>
+    </View>
   )
 }
 
 export function FloatingTabBar({
   active,
   onChange,
-  onCreatePress
+  onCreatePress,
+  tourTargetRefs
 }: {
   active: Tab
   onChange: (tab: Tab) => void
   onCreatePress: () => void
+  tourTargetRefs?: Pick<HomeTourTargetRefs, 'create' | 'utilities' | 'memories'>
 }) {
   const { t } = useTranslation('tabs')
 
@@ -64,6 +71,7 @@ export function FloatingTabBar({
           label={t(tab.labelKey)}
           active={active === tab.id}
           onChange={onChange}
+          targetRef={tab.id === 'utilities' ? tourTargetRefs?.utilities : undefined}
         />
       )),
     [active, onChange, t]
@@ -78,6 +86,7 @@ export function FloatingTabBar({
           label={t(tab.labelKey)}
           active={active === tab.id}
           onChange={onChange}
+          targetRef={tab.id === 'memories' ? tourTargetRefs?.memories : undefined}
         />
       )),
     [active, onChange, t]
@@ -97,9 +106,9 @@ export function FloatingTabBar({
           <HStack className="flex-1 items-center justify-evenly">{right}</HStack>
         </HStack>
 
-        <Pressable
-          onPress={onCreatePress}
-          className="items-center justify-center rounded-full bg-primary"
+        <View
+          ref={tourTargetRefs?.create}
+          collapsable={false}
           style={{
             position: 'absolute',
             top: -20,
@@ -114,8 +123,13 @@ export function FloatingTabBar({
             elevation: 8
           }}
         >
-          <Ionicons color="#FFFFFF" name="add" size={32} />
-        </Pressable>
+          <Pressable
+            onPress={onCreatePress}
+            className="h-full w-full items-center justify-center rounded-full bg-primary"
+          >
+            <Ionicons color="#FFFFFF" name="add" size={32} />
+          </Pressable>
+        </View>
       </View>
     </Box>
   )

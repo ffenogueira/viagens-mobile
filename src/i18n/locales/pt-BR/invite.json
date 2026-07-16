@@ -23,5 +23,12 @@
   "editorTitle": "Editor",
   "editorDesc": "Edita roteiro, checklist, gastos e mensagens",
   "adminTitle": "Admin",
-  "adminDesc": "Edita tudo e convida outras pessoas"
+  "adminDesc": "Edita tudo e convida outras pessoas",
+  "ownerTitle": "Dono da viagem",
+  "shareInvitation": "Você foi convidado(a) para planejar {{destination}} no Viagens!",
+  "shareHowToJoin": "Como entrar:",
+  "shareDownloadApp": "1. Baixe o app: {{url}}",
+  "shareCreateAccount": "2. Crie sua conta ou faça login",
+  "shareOpenInvite": "3. Abra o convite: {{url}}",
+  "sharePermission": "Permissão: {{role}}"
 }

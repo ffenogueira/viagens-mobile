@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 import type { DiscoveryDocument } from 'expo-auth-session'
+import { i18n } from '../i18n'
 import { getAppleServiceId, getGoogleWebClientId, isAppleSignInConfigured, isGoogleSignInConfigured } from '../config/auth'
 import {
   SocialAuthCancelledError,
@@ -70,12 +71,12 @@ async function obtainGoogleCredential(): Promise<SocialCredential> {
   }
 
   if (result.type !== 'success') {
-    throw new Error('Login com Google não concluído.')
+    throw new Error(i18n.t('socialLoginIncomplete', { ns: 'errors', provider: 'Google' }))
   }
 
   const idToken = result.params.id_token
   if (!idToken) {
-    throw new Error('Não recebemos o token do Google. Tente novamente.')
+    throw new Error(i18n.t('socialTokenMissing', { ns: 'errors', provider: 'Google' }))
   }
 
   return { provider: 'google', idToken }
@@ -110,7 +111,7 @@ async function obtainAppleCredentialNative(): Promise<SocialCredential> {
     })
 
     if (!credential.identityToken) {
-      throw new Error('Token da Apple não recebido.')
+      throw new Error(i18n.t('socialTokenMissing', { ns: 'errors', provider: 'Apple' }))
     }
 
     return { provider: 'apple', idToken: credential.identityToken }
@@ -118,7 +119,9 @@ async function obtainAppleCredentialNative(): Promise<SocialCredential> {
     if ((error as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
       throw new SocialAuthCancelledError('apple')
     }
-    throw error instanceof Error ? error : new Error('Falha ao entrar com Apple.')
+    throw error instanceof Error
+      ? error
+      : new Error(i18n.t('socialLoginIncomplete', { ns: 'errors', provider: 'Apple' }))
   }
 }
 
@@ -167,12 +170,12 @@ async function obtainAppleCredentialOAuth(): Promise<SocialCredential> {
   }
 
   if (result.type !== 'success') {
-    throw new Error('Login com Apple não concluído.')
+    throw new Error(i18n.t('socialLoginIncomplete', { ns: 'errors', provider: 'Apple' }))
   }
 
   const idToken = result.params.id_token
   if (!idToken) {
-    throw new Error('Não recebemos o token da Apple. Tente novamente.')
+    throw new Error(i18n.t('socialTokenMissing', { ns: 'errors', provider: 'Apple' }))
   }
 
   return { provider: 'apple', idToken }

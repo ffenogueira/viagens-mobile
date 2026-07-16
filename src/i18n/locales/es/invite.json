@@ -23,5 +23,12 @@
   "editorTitle": "Editor",
   "editorDesc": "Edita itinerario, checklist, gastos y mensajes",
   "adminTitle": "Admin",
-  "adminDesc": "Edita todo e invita a otras personas"
+  "adminDesc": "Edita todo e invita a otras personas",
+  "ownerTitle": "Dueño del viaje",
+  "shareInvitation": "¡Te invitaron a planear {{destination}} en Viagens!",
+  "shareHowToJoin": "Cómo entrar:",
+  "shareDownloadApp": "1. Descarga la app: {{url}}",
+  "shareCreateAccount": "2. Crea tu cuenta o inicia sesión",
+  "shareOpenInvite": "3. Abre la invitación: {{url}}",
+  "sharePermission": "Permiso: {{role}}"
 }

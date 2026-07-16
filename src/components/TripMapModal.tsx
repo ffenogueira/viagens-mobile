@@ -78,9 +78,9 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
                   <Ionicons color={colors.primary} name="finger-print-outline" size={20} />
                 </Box>
                 <VStack className="flex-1">
-                  <Text className="text-[14px] font-black text-foreground">Toque nos pins roxos</Text>
+                  <Text className="text-[14px] font-black text-foreground">{t('mapPinsHintTitle')}</Text>
                   <Text className="mt-1 text-[12px] font-semibold leading-5 text-muted-foreground">
-                    Arraste, aproxime e toque em cada número para ver foto, endereço, horário e distância.
+                    {t('mapPinsHintBody')}
                   </Text>
                 </VStack>
               </HStack>
@@ -133,7 +133,7 @@ export function TripMapModal({ visible, markers, destination, onClose }: TripMap
               <Pressable onPress={() => void openInteractiveMap()} className="mt-2 h-12 items-center justify-center rounded-full bg-[#F3E8FF]">
                 <HStack className="items-center gap-2">
                   <Ionicons color={colors.primary} name="map-outline" size={17} />
-                  <Text className="text-[14px] font-black text-primary">Abrir rota no Google Maps</Text>
+                  <Text className="text-[14px] font-black text-primary">{t('openGoogleMaps')}</Text>
                 </HStack>
               </Pressable>
             ) : null}

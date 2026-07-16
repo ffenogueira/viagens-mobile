@@ -23,13 +23,20 @@ type ProfileScreenProps = {
   user: AuthUser | null
   tripCount: number
   onLogout: () => void
+  onReplayTour: () => void
 }
 
-export function ProfileScreen({ user, tripCount, onLogout }: ProfileScreenProps) {
+export function ProfileScreen({ user, tripCount, onLogout, onReplayTour }: ProfileScreenProps) {
   const { t } = useTranslation('profile')
   const [locale, setLocale] = useState<AppLocale>(getActiveLocale())
 
-  const menuItems = [
+  const menuItems: Array<{
+    icon: keyof typeof Ionicons.glyphMap
+    label: string
+    desc: string
+    onPress?: () => void
+  }> = [
+    { icon: 'map-outline' as const, label: t('appTour'), desc: t('appTourDesc'), onPress: onReplayTour },
     { icon: 'notifications-outline' as const, label: t('notifications'), desc: t('notificationsDesc') },
     { icon: 'shield-checkmark-outline' as const, label: t('privacy'), desc: t('privacyDesc') },
     { icon: 'help-circle-outline' as const, label: t('help'), desc: t('helpDesc') }
@@ -89,7 +96,7 @@ export function ProfileScreen({ user, tripCount, onLogout }: ProfileScreenProps)
       </Box>
 
       {menuItems.map((item) => (
-        <Pressable key={item.label} className="mb-3">
+        <Pressable key={item.label} className="mb-3" onPress={item.onPress}>
           <HStack className="items-center gap-3 rounded-3xl border border-border bg-card p-4 shadow-soft-1">
             <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-viagens-lilac">
               <Ionicons color={colors.primary} name={item.icon} size={22} />

@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store'
-import { getActiveLocale, translateApiError } from '../i18n'
+import { getActiveLocale, i18n, translateApiError } from '../i18n'
 import type { AppLocale } from '../i18n/types'
 import type {
   ActivitySuggestion,
@@ -85,7 +85,7 @@ function parseTripMetadata(raw: unknown): {
 function normalizeWishlistItem(raw: Record<string, unknown>): TripWishlistItem {
   return {
     id: String(raw.id),
-    title: String(raw.title ?? 'Lugar'),
+    title: String(raw.title ?? i18n.t('placeFallback', { ns: 'trip' })),
     source: String(raw.source ?? 'wishlist'),
     notes: raw.notes ? String(raw.notes) : null,
     url: raw.url ? String(raw.url) : null
@@ -95,7 +95,7 @@ function normalizeWishlistItem(raw: Record<string, unknown>): TripWishlistItem {
 function normalizeChecklistItem(raw: Record<string, unknown>): TripChecklistItem {
   return {
     id: String(raw.id),
-    title: String(raw.title ?? 'Tarefa'),
+    title: String(raw.title ?? i18n.t('taskFallback', { ns: 'trip' })),
     category: raw.category ? String(raw.category) : null,
     isCompleted: Boolean(raw.isCompleted ?? raw.is_completed ?? raw.is_done)
   }
@@ -111,7 +111,7 @@ function normalizeJournalEntry(raw: Record<string, unknown>): TripJournalEntry {
     user: userRaw.id
       ? {
           id: String(userRaw.id),
-          name: String(userRaw.name ?? 'Viajante'),
+          name: String(userRaw.name ?? i18n.t('traveler', { ns: 'common' })),
           handle: userRaw.handle ? String(userRaw.handle) : null
         }
       : undefined
@@ -135,7 +135,7 @@ export function normalizeTrip(raw: Record<string, unknown>): Trip {
   return {
     id: String(raw.id),
     title: raw.title ? String(raw.title) : undefined,
-    destination: String(raw.destination ?? raw.destinationName ?? 'Destino'),
+    destination: String(raw.destination ?? raw.destinationName ?? i18n.t('destinationFallback', { ns: 'trip' })),
     country: raw.country ? String(raw.country) : undefined,
     region: tripMetadata.region,
     latitude: tripMetadata.latitude,
@@ -188,7 +188,7 @@ function normalizeTripDay(raw: Record<string, unknown>): TripDayPlan {
   const itemsRaw = raw.items ?? []
   return {
     id: String(raw.id),
-    title: String(raw.title ?? 'Dia'),
+    title: String(raw.title ?? i18n.t('dayFallback', { ns: 'trip' })),
     date: raw.date ? String(raw.date).slice(0, 10) : null,
     items: Array.isArray(itemsRaw)
       ? itemsRaw
@@ -199,7 +199,7 @@ function normalizeTripDay(raw: Record<string, unknown>): TripDayPlan {
             const timeLabel = meta.time ?? (startsAt ? String(startsAt).slice(11, 16) : null)
             return {
               id: String(item.id),
-              title: String(item.title ?? 'Local'),
+              title: String(item.title ?? i18n.t('placeFallback', { ns: 'trip' })),
               type: String(item.type ?? 'place'),
               placeName: item.placeName ? String(item.placeName) : null,
               address: item.address ? String(item.address) : null,
@@ -220,7 +220,7 @@ function normalizeMember(raw: Record<string, unknown>): TripMember {
     role: raw.role ? String(raw.role) : undefined,
     user: {
       id: String(userRaw.id ?? ''),
-      name: String(userRaw.name ?? 'Viajante'),
+      name: String(userRaw.name ?? i18n.t('traveler', { ns: 'common' })),
       handle: userRaw.handle ? String(userRaw.handle) : null
     }
   }
@@ -234,7 +234,7 @@ function normalizeChatMessage(raw: Record<string, unknown>): ChatMessage {
     createdAt: String(raw.createdAt ?? raw.created_at ?? new Date().toISOString()),
     user: {
       id: String(userRaw.id ?? ''),
-      name: String(userRaw.name ?? 'Viajante'),
+      name: String(userRaw.name ?? i18n.t('traveler', { ns: 'common' })),
       handle: userRaw.handle ? String(userRaw.handle) : null
     }
   }
@@ -248,7 +248,7 @@ export function normalizeExpense(raw: Record<string, unknown>): TripExpense {
 
   return {
     id: String(raw.id),
-    title: String(raw.title ?? 'Gasto'),
+    title: String(raw.title ?? i18n.t('expenseFallback', { ns: 'trip' })),
     amount: Number(raw.amount ?? 0),
     currency: String(raw.currency ?? 'BRL'),
     category: raw.category ? String(raw.category) : null,
@@ -260,7 +260,7 @@ export function normalizeExpense(raw: Record<string, unknown>): TripExpense {
 }
 
 function parseApiError(payload: unknown): string {
-  if (!payload) return 'Não foi possível concluir a ação agora.'
+  if (!payload) return i18n.t('generic', { ns: 'errors' })
 
   if (typeof payload === 'string') return payload
 
@@ -270,7 +270,7 @@ function parseApiError(payload: unknown): string {
         if (typeof item === 'object' && item && 'message' in item) {
           return String(item.message)
         }
-        return 'Campo inválido'
+        return i18n.t('invalidField', { ns: 'errors' })
       })
       .join('\n')
   }
@@ -280,7 +280,7 @@ function parseApiError(payload: unknown): string {
 
     if (typeof data.error === 'string') {
       if (data.error === 'USER_ALREADY_EXISTS') {
-        return translateApiError('USER_ALREADY_EXISTS', 'Este e-mail já está cadastrado.')
+        return translateApiError('USER_ALREADY_EXISTS')
       }
       const translated = translateApiError(data.error)
       if (translated !== data.error || data.error.includes('_')) {
@@ -291,7 +291,7 @@ function parseApiError(payload: unknown): string {
     if (typeof data.message === 'string') return data.message
   }
 
-  return 'Não foi possível concluir a ação agora.'
+  return i18n.t('generic', { ns: 'errors' })
 }
 
 function unwrapUser(payload: unknown): AuthUser {
@@ -329,7 +329,7 @@ function unwrapTrip(payload: unknown): Trip {
     return normalizeTrip(data)
   }
 
-  throw new Error('Resposta de viagem inválida.')
+  throw new Error(i18n.t('invalidTripResponse', { ns: 'errors' }))
 }
 
 export async function getToken() {
@@ -383,7 +383,7 @@ export async function fetchProfile(): Promise<AuthUser> {
   const payload = await apiRequest<unknown>('/auth/me')
   const user = unwrapUser(payload)
   if (!user?.id || !user?.email) {
-    throw new Error('Perfil inválido.')
+    throw new Error(i18n.t('invalidProfileResponse', { ns: 'errors' }))
   }
   return user
 }
@@ -478,7 +478,7 @@ export async function fetchInvitePreview(token: string): Promise<TripInvitePrevi
   const payload = await apiRequest<{ preview?: Record<string, unknown> }>(`/trip-invites/${token}/preview`)
   const raw = payload.preview ?? {}
   return {
-    destination: String(raw.destination ?? 'Viagem'),
+    destination: String(raw.destination ?? i18n.t('tripFallback', { ns: 'trip' })),
     country: raw.country ? String(raw.country) : null,
     role: (raw.role as TripInviteRole) ?? 'MEMBER',
     hostName: raw.hostName ? String(raw.hostName) : null,
@@ -491,7 +491,7 @@ export async function acceptTripInvite(token: string): Promise<{ tripId: string;
     method: 'POST'
   })
   if (!payload.tripId) {
-    throw new Error('Convite inválido ou expirado.')
+    throw new Error(i18n.t('INVITE_NOT_FOUND', { ns: 'errors' }))
   }
   return { tripId: payload.tripId, role: payload.role ?? 'MEMBER' }
 }
@@ -570,7 +570,7 @@ export async function createTrip(input?: {
 }): Promise<Trip> {
   const destinationName = input?.destinationName ?? 'Lisboa'
   if (!input?.startsAt || !input?.endsAt) {
-    throw new Error('Informe as datas de início e fim da viagem.')
+    throw new Error(i18n.t('tripDatesRequired', { ns: 'errors' }))
   }
 
   const budgetCurrency = resolveTripCurrency(input?.country, input?.countryCode)
@@ -578,7 +578,7 @@ export async function createTrip(input?: {
   const payload = await apiRequest<unknown>('/trips', {
     method: 'POST',
     body: JSON.stringify({
-      title: input?.title ?? `Viagem para ${destinationName}`,
+      title: input?.title ?? i18n.t('tripTitleFor', { ns: 'trip', destination: destinationName }),
       destinationName,
       country: input?.country ?? 'Portugal',
       description: input?.description,
@@ -642,7 +642,7 @@ export async function login(email: string, password: string): Promise<AuthSessio
   const user = payload.user ?? payload.data?.user
 
   if (!token || !user) {
-    throw new Error('Resposta de login inválida.')
+    throw new Error(i18n.t('invalidLoginResponse', { ns: 'errors' }))
   }
 
   await saveToken(token)
@@ -666,7 +666,7 @@ export async function loginWithSocial(
   const user = payload.user ?? payload.data?.user
 
   if (!token || !user) {
-    throw new Error('Resposta de login social inválida.')
+    throw new Error(i18n.t('invalidSocialLoginResponse', { ns: 'errors' }))
   }
 
   await saveToken(token)
@@ -691,7 +691,7 @@ export async function register(name: string, email: string, password: string): P
   const user = payload.user ?? payload.data?.user
 
   if (!token || !user) {
-    throw new Error('Conta criada, mas a sessão não foi iniciada. Tente entrar.')
+    throw new Error(i18n.t('registrationSessionFailed', { ns: 'errors' }))
   }
 
   await saveToken(token)
@@ -754,7 +754,7 @@ function unwrapActivitySuggestions(output: unknown): ActivitySuggestion[] {
   return suggestions
     .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
     .map((item) => ({
-      title: String(item.title ?? 'Atividade'),
+      title: String(item.title ?? i18n.t('activityFallback', { ns: 'trip' })),
       description: String(item.description ?? ''),
       suggestedTime: item.suggestedTime ? String(item.suggestedTime) : null,
       type: item.type ? String(item.type) : 'place',
@@ -768,13 +768,13 @@ export async function pollAiJob<T>(jobId: string, parse: (output: unknown) => T,
     await sleep(index === 0 ? 800 : 1200)
     const payload = await apiRequest<{ job?: AiJobRecord }>(`/ai/jobs/${jobId}`)
     const job = payload.job
-    if (!job) throw new Error('Job de IA não encontrado.')
+    if (!job) throw new Error(i18n.t('AI_JOB_NOT_FOUND', { ns: 'errors' }))
     if (job.status === 'COMPLETED') return parse(job.output)
     if (job.status === 'FAILED') {
-      throw new Error(job.error || 'A FEFAI não conseguiu concluir agora.')
+      throw new Error(job.error || i18n.t('fefaiFailed', { ns: 'errors' }))
     }
   }
-  throw new Error('A FEFAI está demorando. Tente novamente em instantes.')
+  throw new Error(i18n.t('fefaiTimeout', { ns: 'errors' }))
 }
 
 export async function requestActivitySuggestions(
@@ -794,7 +794,7 @@ export async function requestActivitySuggestions(
   }
 
   const jobId = payload.job?.id
-  if (!jobId) throw new Error('Não foi possível iniciar a sugestão.')
+  if (!jobId) throw new Error(i18n.t('suggestionStartFailed', { ns: 'errors' }))
   const suggestions = await pollAiJob(jobId, unwrapActivitySuggestions)
   return { suggestions, source: 'ai' }
 }
@@ -830,7 +830,7 @@ export async function sendChatMessage(tripId: string, body: string): Promise<Cha
   if (payload.message && typeof payload.message === 'object') {
     return normalizeChatMessage(payload.message)
   }
-  throw new Error('Mensagem não enviada.')
+  throw new Error(i18n.t('messageSendFailed', { ns: 'errors' }))
 }
 
 export async function createExpense(
@@ -858,14 +858,14 @@ export async function createExpense(
 
   const expense = payload.expense
   if (!expense || typeof expense !== 'object') {
-    throw new Error('Gasto não registrado.')
+    throw new Error(i18n.t('expenseCreateFailed', { ns: 'errors' }))
   }
 
   const normalized = normalizeExpense(expense)
   return {
     ...normalized,
     source: input.source,
-    note: input.note ?? (input.receiptUri ? 'Recibo anexado no celular' : null),
+    note: input.note ?? (input.receiptUri ? i18n.t('receiptAttached', { ns: 'trip' }) : null),
     receiptUrl: input.receiptUri ?? normalized.receiptUrl
   }
 }
@@ -880,25 +880,26 @@ export async function fetchExpenseBalances(tripId: string): Promise<ExpenseBalan
   }))
 }
 
-const weatherLabels: Record<number, { label: string; icon: string }> = {
-  0: { label: 'Céu limpo', icon: 'sunny' },
-  1: { label: 'Quase limpo', icon: 'partly-sunny' },
-  2: { label: 'Parcialmente nublado', icon: 'partly-sunny-outline' },
-  3: { label: 'Nublado', icon: 'cloud' },
-  45: { label: 'Neblina', icon: 'cloudy' },
-  48: { label: 'Neblina', icon: 'cloudy' },
-  51: { label: 'Garoa', icon: 'rainy' },
-  53: { label: 'Garoa', icon: 'rainy' },
-  55: { label: 'Garoa forte', icon: 'rainy' },
-  61: { label: 'Chuva', icon: 'rainy' },
-  63: { label: 'Chuva', icon: 'rainy' },
-  65: { label: 'Chuva forte', icon: 'rainy' },
-  80: { label: 'Pancadas', icon: 'thunderstorm' },
-  95: { label: 'Tempestade', icon: 'thunderstorm' }
+const weatherLabels: Record<number, { labelKey: string; icon: string }> = {
+  0: { labelKey: 'weatherClear', icon: 'sunny' },
+  1: { labelKey: 'weatherMostlyClear', icon: 'partly-sunny' },
+  2: { labelKey: 'weatherPartlyCloudy', icon: 'partly-sunny-outline' },
+  3: { labelKey: 'weatherCloudy', icon: 'cloud' },
+  45: { labelKey: 'weatherFog', icon: 'cloudy' },
+  48: { labelKey: 'weatherFog', icon: 'cloudy' },
+  51: { labelKey: 'weatherDrizzle', icon: 'rainy' },
+  53: { labelKey: 'weatherDrizzle', icon: 'rainy' },
+  55: { labelKey: 'weatherHeavyDrizzle', icon: 'rainy' },
+  61: { labelKey: 'weatherRain', icon: 'rainy' },
+  63: { labelKey: 'weatherRain', icon: 'rainy' },
+  65: { labelKey: 'weatherHeavyRain', icon: 'rainy' },
+  80: { labelKey: 'weatherShowers', icon: 'thunderstorm' },
+  95: { labelKey: 'weatherStorm', icon: 'thunderstorm' }
 }
 
 function weatherMeta(code: number) {
-  return weatherLabels[code] ?? { label: 'Tempo variável', icon: 'cloud-outline' }
+  const meta = weatherLabels[code] ?? { labelKey: 'weatherVariable', icon: 'cloud-outline' }
+  return { label: i18n.t(meta.labelKey, { ns: 'trip' }), icon: meta.icon }
 }
 
 export async function fetchWeatherForecast(destination: string, country?: string): Promise<{
@@ -907,12 +908,12 @@ export async function fetchWeatherForecast(destination: string, country?: string
 }> {
   const query = encodeURIComponent([destination, country].filter(Boolean).join(', '))
   const geoResponse = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1&language=pt`
+    `https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1&language=${getActiveLocale().split('-')[0]}`
   )
   const geoData = await geoResponse.json()
   const place = geoData.results?.[0]
   if (!place) {
-    throw new Error('Não encontramos a previsão para esse destino.')
+    throw new Error(i18n.t('weatherDestinationNotFound', { ns: 'trip' }))
   }
 
   const forecastResponse = await fetch(

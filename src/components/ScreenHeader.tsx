@@ -14,7 +14,7 @@ import { UserAvatar } from './UserAvatar'
 type ScreenHeaderProps = {
   user: AuthUser | null
   destination?: string
-  onLogout?: () => void
+  onProfilePress?: () => void
   onNotificationPress?: () => void
   showNotification?: boolean
 }
@@ -22,7 +22,7 @@ type ScreenHeaderProps = {
 export function ScreenHeader({
   user,
   destination,
-  onLogout,
+  onProfilePress,
   onNotificationPress,
   showNotification = true
 }: ScreenHeaderProps) {
@@ -31,7 +31,8 @@ export function ScreenHeader({
 
   return (
     <HStack className="items-center justify-between px-5 pb-4 pt-3">
-      <HStack className="flex-1 items-center gap-3">
+      <Pressable onPress={onProfilePress} className="flex-1">
+        <HStack className="items-center gap-3">
         <UserAvatar
           name={user?.name}
           className="h-12 w-12 border-2 border-primary/30 bg-viagens-lilac"
@@ -43,7 +44,8 @@ export function ScreenHeader({
             {destination || t('yourTravelWorkspace')}
           </Text>
         </VStack>
-      </HStack>
+        </HStack>
+      </Pressable>
 
       <HStack className="gap-2">
         {showNotification && (
@@ -53,14 +55,6 @@ export function ScreenHeader({
           >
             <Ionicons color="#111827" name="notifications-outline" size={22} />
             <Box className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full border border-white bg-destructive" />
-          </Pressable>
-        )}
-        {onLogout && (
-          <Pressable
-            className="h-11 w-11 items-center justify-center rounded-2xl border border-border bg-card"
-            onPress={onLogout}
-          >
-            <Ionicons color="#111827" name="log-out-outline" size={22} />
           </Pressable>
         )}
       </HStack>

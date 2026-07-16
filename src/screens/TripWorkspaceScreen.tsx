@@ -909,7 +909,7 @@ export function TripWorkspaceScreen({
                       ) : (
                         <Box className="h-[92px] w-[92px] items-center justify-center rounded-[20px] bg-viagens-lilac">
                           <Ionicons color={colors.primary} name="image-outline" size={26} />
-                          <Text className="mt-1 text-[11px] font-black text-primary">Foto</Text>
+                          <Text className="mt-1 text-[11px] font-black text-primary">{t('photo')}</Text>
                         </Box>
                       )}
                       <VStack className="flex-1">
@@ -984,15 +984,13 @@ export function TripWorkspaceScreen({
                 </ImageBackground>
               )}
               <Box className="absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-1.5">
-                <Text className="text-[12px] font-black text-foreground">
-                  Mapa do dia · toque para aproximar
-                </Text>
+                <Text className="text-[12px] font-black text-foreground">{t('dayMapTapHint')}</Text>
               </Box>
               {modalMapMarkers.length > 0 && (
                 <Box className="absolute bottom-4 right-4 rounded-full bg-primary px-3 py-1.5">
                   <HStack className="items-center gap-1">
                     <Ionicons color={colors.white} name="expand-outline" size={14} />
-                    <Text className="text-[12px] font-black text-white">Interativo</Text>
+                    <Text className="text-[12px] font-black text-white">{t('interactive')}</Text>
                   </HStack>
                 </Box>
               )}
@@ -1137,7 +1135,7 @@ export function TripWorkspaceScreen({
               <View style={{ alignSelf: 'center', width: 64, height: 6, borderRadius: 999, backgroundColor: '#D1D5DB', marginBottom: 20 }} />
               <Text className="text-[24px] font-black text-foreground">{t('fefaiSuggestTitle')}</Text>
               <Text className="mt-1 text-[13px] font-semibold leading-5 text-muted-foreground">
-                Escolha o tipo de rolê e a FEFAI sugere lugares próximos para você marcar, comparar e encaixar no melhor dia.
+                {t('fefaiSuggestSubtitle')}
               </Text>
               <Text className="mt-2 mb-5 text-[12px] font-black text-primary">
                 {currentTrip.destination}

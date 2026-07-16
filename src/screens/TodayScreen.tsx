@@ -39,8 +39,8 @@ type TodayScreenProps = {
 }
 
 type ActionCard = {
-  title: string
-  description: string
+  titleKey: string
+  descriptionKey: string
   icon: keyof typeof Ionicons.glyphMap
   target: NavigationTarget
   accent: string
@@ -50,71 +50,71 @@ const absoluteFill = StyleSheet.absoluteFill
 
 const travelShortcuts: ActionCard[] = [
   {
-    title: 'Banheiro por perto',
-    description: 'Ache pontos úteis perto de você.',
+    titleKey: 'shortcutToiletsTitle',
+    descriptionKey: 'shortcutToiletsDescription',
     icon: 'water-outline',
     target: 'utilities',
     accent: colors.primary
   },
   {
-    title: 'Guardar mala',
-    description: 'Veja opções para deixar bagagem.',
+    titleKey: 'shortcutLuggageTitle',
+    descriptionKey: 'shortcutLuggageDescription',
     icon: 'briefcase-outline',
     target: 'utilities',
     accent: colors.sky
   },
   {
-    title: 'Converter moeda',
-    description: 'Entenda o preço em reais na hora.',
+    titleKey: 'shortcutCurrencyTitle',
+    descriptionKey: 'shortcutCurrencyDescription',
     icon: 'cash-outline',
     target: 'utilities',
     accent: colors.mint
   },
   {
-    title: 'Clima da viagem',
-    description: 'Veja tempo e ajuste o roteiro.',
+    titleKey: 'shortcutWeatherTitle',
+    descriptionKey: 'shortcutWeatherDescription',
     icon: 'partly-sunny-outline',
     target: 'weather',
     accent: colors.orange
   },
   {
-    title: 'Assistente FEFAI',
-    description: 'IA para roteiro, dúvidas e imprevistos.',
+    titleKey: 'shortcutFefaiTitle',
+    descriptionKey: 'shortcutFefaiDescription',
     icon: 'sparkles',
     target: 'tools',
     accent: colors.primary
   },
   {
-    title: 'Ver a rua',
-    description: 'Conheça a região antes de ir.',
+    titleKey: 'shortcutStreetTitle',
+    descriptionKey: 'shortcutStreetDescription',
     icon: 'navigate-outline',
     target: 'utilities',
     accent: colors.orange
   },
   {
-    title: 'Ler preço com câmera',
-    description: 'OCR para preço, moeda e recibo.',
+    titleKey: 'shortcutCameraTitle',
+    descriptionKey: 'shortcutCameraDescription',
     icon: 'scan',
     target: 'tools-camera',
     accent: colors.sky
   },
   {
-    title: 'Gastos da viagem',
-    description: 'Orçamento, recibos e histórico.',
+    titleKey: 'shortcutExpensesTitle',
+    descriptionKey: 'shortcutExpensesDescription',
     icon: 'wallet-outline',
     target: 'expenses',
     accent: colors.mint
   },
   {
-    title: 'Dividir conta',
-    description: 'Veja quem pagou e quem deve.',
+    titleKey: 'shortcutSplitTitle',
+    descriptionKey: 'shortcutSplitDescription',
     icon: 'people-outline',
     target: 'bill-split',
     accent: colors.primary
   },
   {
-    title: 'Chat do grupo',
-    description: 'Combinados e decisões no mesmo lugar.',
+    titleKey: 'shortcutChatTitle',
+    descriptionKey: 'shortcutChatDescription',
     icon: 'chatbubbles-outline',
     target: 'group-chat',
     accent: colors.sky
@@ -256,12 +256,10 @@ export function TodayScreen({
 
       {!displayTrip ? (
         <VStack>
-          <GuideTipCard onCreateTrip={onOpenCreateTrip} onOpenFefai={() => onNavigate('tools')} />
           <EmptySegmentState segment={segment} loading={loading} onCreateTrip={onOpenCreateTrip} />
         </VStack>
       ) : (
         <VStack>
-          <GuideTipCard onCreateTrip={onOpenCreateTrip} onOpenFefai={() => onNavigate('tools')} compact />
           <TripHomeCard
             trip={cardTrip}
             coverUri={
@@ -295,7 +293,8 @@ function PassportCard({
   onSearch: () => void
   onCreateTrip: () => void
 }) {
-  const firstName = user?.name?.split(' ')[0] || 'viajante'
+  const { t } = useTranslation(['trip', 'common'])
+  const firstName = user?.name?.split(' ')[0] || t('common:traveler')
 
   return (
     <Box className="mb-5 overflow-hidden rounded-[34px] border border-[#EDE9FE] bg-white" style={shadowStrong}>
@@ -323,7 +322,7 @@ function PassportCard({
                 {firstName}
               </Text>
               <Text className="mt-1 text-[13px] font-bold text-muted-foreground" numberOfLines={1}>
-                @{user?.email?.split('@')[0] || 'viajante'}
+                @{user?.email?.split('@')[0] || t('common:traveler').toLowerCase()}
               </Text>
             </VStack>
           </HStack>
@@ -346,11 +345,11 @@ function PassportCard({
         </HStack>
 
         <HStack className="items-center justify-between border-t border-[#EDE9FE] pt-4">
-          <PassportStat label="Viagens" value={String(tripsCount)} icon="airplane-outline" />
+          <PassportStat label={t('passportTrips')} value={String(tripsCount)} icon="airplane-outline" />
           <Box className="h-9 w-px bg-[#EDE9FE]" />
-          <PassportStat label="Recompensas" value="0" icon="ribbon-outline" />
+          <PassportStat label={t('passportRewards')} value="0" icon="ribbon-outline" />
           <Box className="h-9 w-px bg-[#EDE9FE]" />
-          <PassportStat label="Carimbos" value="0" icon="flag-outline" />
+          <PassportStat label={t('passportStamps')} value="0" icon="flag-outline" />
         </HStack>
       </LinearGradient>
     </Box>
@@ -514,6 +513,7 @@ function EmptyTripState({
 }
 
 function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTarget) => void }) {
+  const { t } = useTranslation('trip')
   const rows: ActionCard[][] = []
   for (let index = 0; index < travelShortcuts.length; index += 2) {
     rows.push(travelShortcuts.slice(index, index + 2))
@@ -521,16 +521,16 @@ function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTa
 
   return (
     <VStack className="mt-7">
-      <Text className="mb-1 text-[20px] font-black text-foreground">O que você resolve aqui</Text>
+      <Text className="mb-1 text-[20px] font-black text-foreground">{t('shortcutsHeading')}</Text>
       <Text className="mb-4 text-[13px] font-semibold leading-5 text-muted-foreground">
-        Atalhos com nomes simples para usar antes, durante e depois da viagem.
+        {t('shortcutsSubtitle')}
       </Text>
       <VStack className="gap-3">
         {rows.map((row, rowIndex) => (
           <HStack key={`row-${rowIndex}`} className="gap-3">
             {row.map((action) => (
               <Pressable
-                key={action.title}
+                key={action.titleKey}
                 onPress={() => onNavigate(action.target)}
                 className="flex-1 rounded-[24px] border border-[#EEF2FF] bg-white p-4"
                 style={shadow}
@@ -545,10 +545,10 @@ function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTa
                   className="text-[14px] font-black leading-5 text-foreground"
                   numberOfLines={2}
                 >
-                  {action.title}
+                  {t(action.titleKey)}
                 </Text>
                 <Text className="mt-1 text-[11px] font-semibold leading-4 text-muted-foreground" numberOfLines={3}>
-                  {action.description}
+                  {t(action.descriptionKey)}
                 </Text>
               </Pressable>
             ))}
@@ -561,58 +561,6 @@ function TravelShortcutsGrid({ onNavigate }: { onNavigate: (target: NavigationTa
         ))}
       </VStack>
     </VStack>
-  )
-}
-
-function GuideTipCard({
-  compact = false,
-  onCreateTrip,
-  onOpenFefai
-}: {
-  compact?: boolean
-  onCreateTrip: () => void
-  onOpenFefai: () => void
-}) {
-  return (
-    <Box className={`${compact ? 'mb-4' : 'mb-5'} overflow-hidden rounded-[24px] border border-[#EDE9FE] bg-white`} style={shadow}>
-      <LinearGradient
-        colors={['#FFFFFF', '#F6F0FF', '#ECFEFF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ padding: 14 }}
-      >
-        <HStack className="items-center gap-3">
-          <Box className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
-            <Ionicons color={colors.primary} name="sparkles" size={21} />
-          </Box>
-          <VStack className="flex-1">
-            <Text className="text-[12px] font-black uppercase tracking-[1.1px] text-primary">Dica rápida</Text>
-            <Text className="mt-0.5 text-[15px] font-black leading-5 text-foreground">
-              Crie a viagem e deixe a FEFAI sugerir os primeiros lugares.
-            </Text>
-            <Text className="mt-1 text-[11px] font-semibold leading-4 text-muted-foreground">
-              Depois você chama o grupo, divide gastos e guarda as fotos no mesmo espaço.
-            </Text>
-          </VStack>
-          {compact ? (
-            <Pressable onPress={onOpenFefai} className="h-10 w-10 items-center justify-center rounded-full bg-white">
-              <Ionicons color={colors.primary} name="arrow-forward" size={18} />
-            </Pressable>
-          ) : null}
-        </HStack>
-
-        {!compact ? (
-          <HStack className="mt-4 gap-2">
-            <Pressable onPress={onCreateTrip} className="flex-1 items-center rounded-full bg-primary px-4 py-3">
-              <Text className="text-[13px] font-black text-white">Criar viagem</Text>
-            </Pressable>
-            <Pressable onPress={onOpenFefai} className="flex-1 items-center rounded-full bg-white px-4 py-3">
-              <Text className="text-[13px] font-black text-primary">Falar com FEFAI</Text>
-            </Pressable>
-          </HStack>
-        ) : null}
-      </LinearGradient>
-    </Box>
   )
 }
 
@@ -629,6 +577,7 @@ function TripHomeCard({
   onPress: () => void
   onShortcut?: (shortcut: TripHomeShortcut) => void
 }) {
+  const { t } = useTranslation(['trip', 'common'])
   const fallbackCover = getTripCoverFallback(trip.destination)
   const [resolvedCover, setResolvedCover] = useState(coverUri || fallbackCover)
   const wishlistCount = trip.wishlist_items?.length ?? 0
@@ -664,13 +613,13 @@ function TripHomeCard({
           {daysUntil !== null ? (
             <Box className="absolute right-4 top-4 items-center rounded-[20px] bg-white/92 px-3 py-2">
               <Text className="text-[26px] font-black leading-7 text-primary">{daysUntil}</Text>
-              <Text className="text-[10px] font-black uppercase tracking-[1px] text-primary">dias</Text>
+              <Text className="text-[10px] font-black uppercase tracking-[1px] text-primary">{t('common:days')}</Text>
             </Box>
           ) : null}
 
           <VStack className="flex-1 justify-end p-5">
             <Text className="text-[12px] font-black uppercase tracking-[1.6px] text-white/75">
-              Sua viagem
+              {t('common:yourTrip')}
             </Text>
             <Text className="mt-1 text-[34px] font-black leading-[38px] text-white" numberOfLines={1}>
               {trip.destination}
@@ -682,7 +631,7 @@ function TripHomeCard({
       <HStack className="items-center justify-between px-4 py-4">
         <Metric
           icon="star"
-          label="Wishlist"
+          label={t('wishlist')}
           value={String(wishlistCount)}
           color={colors.orange}
           onPress={onShortcut ? () => onShortcut('wishlist') : undefined}
@@ -690,7 +639,7 @@ function TripHomeCard({
         <Box className="h-10 w-px bg-[#E5E7EB]" />
         <Metric
           icon="checkmark-circle"
-          label="Checklist"
+          label={t('checklist')}
           value={checklistTotal ? `${checklistDone}/${checklistTotal}` : '0'}
           color={colors.mint}
           onPress={onShortcut ? () => onShortcut('checklist') : undefined}
@@ -698,7 +647,7 @@ function TripHomeCard({
         <Box className="h-10 w-px bg-[#E5E7EB]" />
         <Metric
           icon="people"
-          label="Grupo"
+          label={t('group')}
           value={String(membersCount)}
           color={colors.primary}
           onPress={onShortcut ? () => onShortcut('group') : undefined}
@@ -706,7 +655,7 @@ function TripHomeCard({
         <Box className="h-10 w-px bg-[#E5E7EB]" />
         <Metric
           icon="wallet"
-          label="Orçamento"
+          label={t('budget')}
           value={budgetLabel}
           color={colors.sky}
           onPress={onShortcut ? () => onShortcut('budget') : undefined}
@@ -715,7 +664,7 @@ function TripHomeCard({
 
       <Pressable onPress={onPress}>
         <HStack className="items-center justify-center gap-1 border-t border-[#E5E7EB] px-5 py-3">
-          <Text className="text-[12px] font-black text-primary">Abrir viagem</Text>
+          <Text className="text-[12px] font-black text-primary">{t('common:openTrip')}</Text>
           <Ionicons color={colors.primary} name="chevron-forward" size={18} />
         </HStack>
       </Pressable>

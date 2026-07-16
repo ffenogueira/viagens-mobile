@@ -1,4 +1,5 @@
 import type { InvitePermissionLevel, TripInviteRole } from '../types/trip'
+import { i18n } from '../i18n'
 
 export const APK_DOWNLOAD_URL =
   'https://api-viagens.upyouridea.com.br/viagens-app/viagens-by-up-your-idea-public-preview.apk'
@@ -16,16 +17,16 @@ export function invitePermissionToApiRole(level: InvitePermissionLevel): TripInv
 }
 
 export function inviteRoleLabel(level: InvitePermissionLevel) {
-  if (level === 'viewer') return 'Leitor — só visualiza a viagem'
-  if (level === 'admin') return 'Admin — edita e convida outras pessoas'
-  return 'Editor — edita roteiro, checklist e gastos'
+  if (level === 'viewer') return i18n.t('viewerDesc', { ns: 'invite' })
+  if (level === 'admin') return i18n.t('adminDesc', { ns: 'invite' })
+  return i18n.t('editorDesc', { ns: 'invite' })
 }
 
 export function memberRoleLabel(role?: string) {
-  if (role === 'OWNER') return 'Dono da viagem'
-  if (role === 'ORGANIZER') return 'Admin'
-  if (role === 'VIEWER') return 'Leitor'
-  return 'Editor'
+  if (role === 'OWNER') return i18n.t('ownerTitle', { ns: 'invite' })
+  if (role === 'ORGANIZER') return i18n.t('adminTitle', { ns: 'invite' })
+  if (role === 'VIEWER') return i18n.t('viewerTitle', { ns: 'invite' })
+  return i18n.t('editorTitle', { ns: 'invite' })
 }
 
 export function buildInviteShareMessage(input: {
@@ -35,14 +36,14 @@ export function buildInviteShareMessage(input: {
 }) {
   const link = buildTripInviteLink(input.token)
   return [
-    `Você foi convidado(a) para planejar ${input.destination} no Viagens!`,
+    i18n.t('shareInvitation', { ns: 'invite', destination: input.destination }),
     '',
-    'Como entrar:',
-    `1. Baixe o app: ${APK_DOWNLOAD_URL}`,
-    '2. Crie sua conta ou faça login',
-    `3. Abra o convite: ${link}`,
+    i18n.t('shareHowToJoin', { ns: 'invite' }),
+    i18n.t('shareDownloadApp', { ns: 'invite', url: APK_DOWNLOAD_URL }),
+    i18n.t('shareCreateAccount', { ns: 'invite' }),
+    i18n.t('shareOpenInvite', { ns: 'invite', url: link }),
     '',
-    `Permissão: ${inviteRoleLabel(input.permission)}`
+    i18n.t('sharePermission', { ns: 'invite', role: inviteRoleLabel(input.permission) })
   ].join('\n')
 }
 

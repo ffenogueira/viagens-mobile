@@ -1,9 +1,8 @@
 import React from 'react'
 import { Alert } from 'react-native'
-import { useTranslation } from 'react-i18next'
 import { Ionicons } from '@expo/vector-icons'
 import { Box, HStack, Pressable, Text, VStack } from '../../components/ui'
-import { changeAppLocale, type AppLocale } from '../i18n'
+import { changeAppLocale, i18n, type AppLocale } from '../i18n'
 import { LOCALE_OPTIONS } from '../i18n/types'
 import { colors } from '../theme'
 
@@ -14,13 +13,11 @@ export function LanguagePicker({
   value: AppLocale
   onChange?: (locale: AppLocale) => void
 }) {
-  const { t } = useTranslation('profile')
-
   async function selectLocale(locale: AppLocale) {
     if (locale === value) return
     await changeAppLocale(locale)
     onChange?.(locale)
-    Alert.alert(t('language'), t('languageUpdated'))
+    Alert.alert(i18n.t('language', { ns: 'profile' }), i18n.t('languageUpdated', { ns: 'profile' }))
   }
 
   return (
